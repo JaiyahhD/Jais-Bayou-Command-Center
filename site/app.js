@@ -1167,6 +1167,7 @@ let bayouExamQuestionIds = [];
 let bayouExamStarted = false;
 let bayouExamDeadline = null;
 let bayouExamTimer = null;
+let bayouExamSaveFailed = false;
 
 function bayouExamTimeRemaining() {
     if (!bayouExamDeadline) return 0;
@@ -1207,7 +1208,9 @@ function bayouStartExamCountdown() {
                 await bayouSubmitMockOA();
             } catch (error) {
                 console.error('Mock OA submission failed:', error);
-                alert('Could not save Mock OA. Please try submitting again.');
+                bayouExamSaveFailed = true;
+                render();
+                alert('Your answers are still here. Use Retry Save to save your Mock OA.');
             }
         }
     }, 1000);
@@ -1230,6 +1233,7 @@ function bayouResetExamSession() {
     }
 
     bayouExamStarted = false;
+    bayouExamSaveFailed = false;
     bayouExamDeadline = null;
     bayouExamTimed = false;
 
@@ -1600,6 +1604,7 @@ function studyPage() {
                     ${bayouExamTimed ? `<div id="bayouExamClock" style="font-size:32px;font-weight:800;color:#FF9FCB;margin:12px 0">${bayouFormatExamTime(bayouExamTimeRemaining())}</div>` : '<p>Take your time, future educator! 💗</p>'}
                     <span class="pill">📝 ${qq.length} Exam Questions</span>
                     <p class="small muted">Your answers are revealed after submission.</p>
+                    ${bayouExamSaveFailed ? `<div class="notice">⚠️ Your last save did not complete. Your answers are preserved.</div>${button('💾 Retry Save', 'retryMockOASave')}` : ''}
                 </div>`;
         }
         if (!isMock || isFinished) {
@@ -2455,10 +2460,13 @@ async function bayouSubmitMockOA() {
     });
 
     if (result.error) {
-        alert('Could not save Mock OA: ' + result.error.message);
+        bayouExamSaveFailed = true;
+        render();
+        alert('Could not save Mock OA. Your answers are preserved. Use Retry Save. ' + result.error.message);
         return;
     }
 
+    bayouExamSaveFailed = false;
     quizDone = true;
 
     if (bayouExamTimer !== null) {
@@ -2709,6 +2717,10 @@ async function handle(action) {
         return;
     }
 
+    if (action === 'retryMockOASave') {
+        return bayouSubmitMockOA();
+    }
+
     if (action === 'quizNext') {
         return quizNext();
     }
@@ -2823,6 +2835,14 @@ document.addEventListener('click', async event => {
 ========================================== */
 
 document.addEventListener('change', async event => {
+    if (event.target.matches('input[name="quizAnswer"]') && owner && !quizDone) {
+        const c = active();
+        if (c) {
+            const current = bayouActiveQuestions(questions.filter(q => q.course_id === c.id))[quizIndex];
+            if (current) quizAnswers[current.id] = Number(event.target.value);
+        }
+        return;
+    }
     
     if (event.target.matches('input[name="bayouMode"]') && owner) {
         if (bayouExamStarted && !quizDone) return;
