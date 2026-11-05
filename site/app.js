@@ -811,6 +811,13 @@ function shell(title, content) {
 
 function dashboard() {
     const stats = progressStats(courses);
+    
+    const remainingCU = stats.total - stats.earned;
+
+    const awaitingCU = courses
+        .filter(c => c.status === 'Needs Evaluation')
+        .reduce((sum, c) => sum + Number(c.cu || 0), 0);
+
 
     const last = attempts.length
         ? attempts[attempts.length - 1]
@@ -840,6 +847,24 @@ function dashboard() {
             <div class="card stat">
                 <strong>${stats.percent}%</strong>
                 <small>Degree Progress</small>
+            </div>
+        </div>
+
+        
+        <div class="stats" style="margin-top:16px">
+            <div class="card stat">
+                <strong>${remainingCU}</strong>
+                <small>🪷 CUs Remaining</small>
+            </div>
+
+            <div class="card stat">
+                <strong>${awaitingCU}</strong>
+                <small>🌱 CUs Awaiting Evaluation</small>
+            </div>
+
+            <div class="card stat">
+                <strong>${stats.total}</strong>
+                <small>👑 Total Program CUs Tracked</small>
             </div>
         </div>
 
@@ -1071,6 +1096,135 @@ function coursePage() {
    PRIVATE STUDY STUDIO
 ========================================== */
 
+let bayouQuizMode = 'standard';
+let bayouQuizQuestionIds = [];
+
+/* ==========================================
+   👑 BAYOU MOCK OA EXAM SETTINGS
+========================================== */
+
+let bayouExamType = 'practice';
+let bayouExamTimed = false;
+let bayouExamMinutes = 60;
+let bayouExamQuestionLimit = 25;
+let bayouExamQuestionIds = [];
+let bayouExamStarted = false;
+let bayouExamDeadline = null;
+let bayouExamTimer = null;
+
+function bayouExamTimeRemaining() {
+    if (!bayouExamDeadline) return 0;
+
+    return Math.max(
+        0,
+        Math.ceil((bayouExamDeadline - Date.now()) / 1000)
+    );
+}
+
+
+function bayouStartExamCountdown() {
+    if (bayouExamTimer !== null) {
+        clearInterval(bayouExamTimer);
+    }
+
+    if (!bayouExamStarted || !bayouExamTimed) return;
+
+    bayouExamTimer = setInterval(async () => {
+        if (!bayouExamStarted || quizDone) {
+            clearInterval(bayouExamTimer);
+            bayouExamTimer = null;
+            return;
+        }
+
+        const remaining = bayouExamTimeRemaining();
+        const display = document.querySelector('#bayouExamClock');
+
+        if (display) {
+            display.textContent = bayouFormatExamTime(remaining);
+        }
+
+        if (remaining <= 0) {
+            clearInterval(bayouExamTimer);
+            bayouExamTimer = null;
+
+            try {
+                await bayouSubmitMockOA();
+            } catch (error) {
+                console.error('Mock OA submission failed:', error);
+                alert('Could not save Mock OA. Please try submitting again.');
+            }
+        }
+    }, 1000);
+}
+
+function bayouFormatExamTime(seconds) {
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    const remainingSeconds = seconds % 60;
+
+    return [hours, minutes, remainingSeconds]
+        .map(value => String(value).padStart(2, '0'))
+        .join(':');
+}
+
+function bayouResetExamSession() {
+    if (bayouExamTimer !== null) {
+        clearInterval(bayouExamTimer);
+        bayouExamTimer = null;
+    }
+
+    bayouExamStarted = false;
+    bayouExamDeadline = null;
+    bayouExamTimed = false;
+
+    quizIndex = 0;
+    quizAnswers = {};
+    quizDone = false;
+
+    bayouQuizQuestionIds = [];
+    bayouExamQuestionIds = [];
+}
+
+
+function bayouActiveQuestions(questionList) {
+    if (bayouExamStarted) {
+        return bayouExamQuestionIds
+            .map(id => questionList.find(q => q.id === id))
+            .filter(Boolean);
+    }
+
+    return bayouQuizQuestions(questionList);
+}
+
+function bayouShuffleQuestions(questionList) {
+    const shuffled = [...questionList];
+
+    for (let i = shuffled.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+
+        [shuffled[i], shuffled[j]] =
+            [shuffled[j], shuffled[i]];
+    }
+
+    return shuffled;
+}
+
+function bayouQuizQuestions(questionList) {
+    if (bayouQuizMode !== 'random') {
+        return questionList;
+    }
+
+    if (bayouQuizQuestionIds.length !== questionList.length ||
+        !questionList.every(q => bayouQuizQuestionIds.includes(q.id))) {
+        bayouQuizQuestionIds = bayouShuffleQuestions(questionList)
+            .map(q => q.id);
+    }
+
+    return bayouQuizQuestionIds
+        .map(id => questionList.find(q => q.id === id))
+        .filter(Boolean);
+}
+
 function studyPage() {
     const c = active();
 
@@ -1081,8 +1235,36 @@ function studyPage() {
     }
 
     const cc = cards.filter(x => x.course_id === c.id);
-    const qq = questions.filter(x => x.course_id === c.id);
+        const qq = bayouActiveQuestions(
+        questions.filter(x => x.course_id === c.id)
+    );
     const aa = attempts.filter(x => x.course_id === c.id);
+
+    
+    // ==========================================
+    // BAYOU STUDY STUDIO 2.0 — LIVE STATISTICS
+    // ==========================================
+
+    const latestAttempt = aa.length
+        ? [...aa].sort((a, b) =>
+            new Date(b.created_at) - new Date(a.created_at)
+        )[0]
+        : null;
+
+    const bestAttempt = aa.length
+        ? Math.max(...aa.map(a => pct(a.score, a.total)))
+        : null;
+
+    const studyTopics = [
+        ...new Set(
+            qq.map(q => (q.topic || '').trim())
+                .filter(Boolean)
+        )
+    ];
+
+    const totalPracticeQuestions = qq.length;
+    const totalFlashcards = cc.length;
+    const totalAttempts = aa.length;
 
     const tabs = [
         ['overview', 'Overview'],
@@ -1119,6 +1301,69 @@ function studyPage() {
     `;
 
     if (studyTab === 'overview') {
+        
+        body += `
+            <div class="card" style="margin:18px 0;border-color:#FF9FCB">
+                <div class="eyebrow">
+                    ✨ Your Personal Learning Headquarters
+                </div>
+
+                <h3>💗 My Study Progress</h3>
+
+                <p class="muted">
+                    Live study statistics for
+                    <strong>${esc(c.title)}</strong>
+                </p>
+
+                <div class="stats" style="margin-top:16px">
+                    <div class="card stat">
+                        <strong>${totalFlashcards}</strong>
+                        <small>🧠 Flashcards</small>
+                    </div>
+
+                    <div class="card stat">
+                        <strong>${totalPracticeQuestions}</strong>
+                        <small>📝 Practice Questions</small>
+                    </div>
+
+                    <div class="card stat">
+                        <strong>${totalAttempts}</strong>
+                        <small>📚 Quiz Attempts</small>
+                    </div>
+
+                    <div class="card stat">
+                        <strong>
+                            ${bestAttempt === null
+                                ? '—'
+                                : bestAttempt + '%'}
+                        </strong>
+                        <small>👑 Best Quiz Score</small>
+                    </div>
+                </div>
+
+                <div class="grid two" style="margin-top:16px">
+                    <div>
+                        <h4>🌸 Latest Practice</h4>
+                        <p>
+                            ${latestAttempt
+                                ? `${latestAttempt.score}/${latestAttempt.total}
+                                   (${pct(latestAttempt.score, latestAttempt.total)}%)`
+                                : 'No practice attempts yet.'}
+                        </p>
+                    </div>
+
+                    <div>
+                        <h4>🪷 Competencies Being Studied</h4>
+                        <p>
+                            ${studyTopics.length
+                                ? studyTopics.map(esc).join(' · ')
+                                : 'Add topics to your practice questions to track them here.'}
+                        </p>
+                    </div>
+                </div>
+            </div>
+        `;
+
         body += `
             <div class="grid two">
                 <div class="card">
@@ -1244,102 +1489,87 @@ function studyPage() {
     }
 
     if (studyTab === 'quiz') {
+        const isMock = bayouExamStarted;
+        const isFinished = quizDone;
+        const allAvailable = questions.filter(x => x.course_id === c.id).length;
+        if (isMock && !isFinished) {
+            body += `
+                <div class="card" style="margin-bottom:16px;border:2px solid #E7C987;text-align:center">
+                    <div class="eyebrow">👑 Royal Mock OA In Progress</div>
+                    <h3>${bayouExamTimed ? '⏱️ Time Remaining' : '🌙 Untimed Assessment'}</h3>
+                    ${bayouExamTimed ? `<div id="bayouExamClock" style="font-size:32px;font-weight:800;color:#FF9FCB;margin:12px 0">${bayouFormatExamTime(bayouExamTimeRemaining())}</div>` : '<p>Take your time, future educator! 💗</p>'}
+                    <span class="pill">📝 ${qq.length} Exam Questions</span>
+                    <p class="small muted">Your answers are revealed after submission.</p>
+                </div>`;
+        }
+        if (!isMock || isFinished) {
+            body += `
+                <div class="card" style="margin-bottom:16px;border-color:#FF9FCB">
+                    <div class="eyebrow">👑 Bayou Practice Exam Center</div>
+                    <h3>🧠 Choose Your Practice Mode</h3>
+                    <div class="row" style="gap:12px;flex-wrap:wrap">
+                        <label><input type="radio" name="bayouMode" value="standard" ${bayouQuizMode === 'standard' ? 'checked' : ''}> 🪷 Standard Practice</label>
+                        <label><input type="radio" name="bayouMode" value="random" ${bayouQuizMode === 'random' ? 'checked' : ''}> ✨ Randomized Practice</label>
+                    </div>
+                </div>
+                <div class="card" style="margin-bottom:18px;border-color:#E7C987">
+                    <div class="eyebrow">✨ Royal Assessment Preparation</div>
+                    <h3>👑 Bayou Mock OA Center</h3>
+                    <p class="muted">Practice with questions from your private course question bank. Not an official WGU assessment.</p>
+                    <div class="grid two" style="margin-top:16px">
+                        <div class="field"><label>Exam Experience</label>
+                            <select id="bayouExamType">
+                                <option value="practice" ${bayouExamType === 'practice' ? 'selected' : ''}>📚 Regular Practice</option>
+                                <option value="untimed" ${bayouExamType === 'untimed' ? 'selected' : ''}>🌙 Untimed Mock OA</option>
+                                <option value="timed" ${bayouExamType === 'timed' ? 'selected' : ''}>⏱️ Timed Mock OA</option>
+                            </select>
+                        </div>
+                        <div class="field"><label>Number of Questions</label><input type="number" id="bayouExamQuestionLimit" min="1" max="${Math.max(1, allAvailable)}" value="${Math.min(bayouExamQuestionLimit, Math.max(1, allAvailable))}"></div>
+                        <div class="field"><label>Time Limit (Minutes)</label><input type="number" id="bayouExamMinutes" min="1" max="240" value="${bayouExamMinutes}"></div>
+                        <div class="field"><label>Questions Available</label><div class="pill">🧠 ${allAvailable} Questions</div></div>
+                    </div>
+                    <div style="margin-top:16px">${button('👑 Start My Mock OA', 'startMockOA')}</div>
+                </div>`;
+        }
         if (!qq.length) {
+            body += `<div class="card empty">No practice questions yet.<p>${button('Add Question', 'addQuestion')}</p></div>`;
+        } else if (isFinished) {
+            const correct = qq.filter(q => quizAnswers[q.id] === Number(q.correct_index)).length;
+            const accuracy = pct(correct, qq.length);
             body += `
-                <div class="card empty">
-                    No practice questions yet.
-
-                    <p>
-                        ${button('Add Question', 'addQuestion')}
-                    </p>
+                <div class="card" style="border:2px solid #E7C987;text-align:center">
+                    <div class="eyebrow">${isMock ? '👑 Royal Mock OA Results' : '🪷 Practice Complete'}</div>
+                    <h2>${accuracy}%</h2><h3>${correct} / ${qq.length} Correct</h3>
+                    <p>${accuracy >= 80 ? '✨ Royal Mastery! Beautiful work!' : accuracy >= 70 ? '💗 Growing Stronger! Keep practicing!' : '🌱 Every Question Helps You Bloom!'}</p>
+                    <p class="muted">Saved to your private attempt history. These are practice milestones, not WGU passing thresholds.</p>
+                    <div class="stats" style="margin:20px 0">
+                        <div class="card stat"><strong>${correct}</strong><small>Correct</small></div>
+                        <div class="card stat"><strong>${qq.length - correct}</strong><small>Incorrect / Unanswered</small></div>
+                        <div class="card stat"><strong>${accuracy}%</strong><small>Accuracy</small></div>
+                    </div>
+                    <h3>📚 Review Your Answers</h3>
                 </div>
-            `;
-        } else if (quizDone) {
-            const correct = qq.filter(
-                q => quizAnswers[q.id] === q.correct_index
-            ).length;
-
-            body += `
-                <div class="card">
-                    <div class="eyebrow">Practice Complete</div>
-
-                    <h3>
-                        ${correct}/${qq.length}
-                        · ${pct(correct, qq.length)}%
-                    </h3>
-
-                    <p class="muted">
-                        Saved to your private attempt history.
-                    </p>
-
-                    ${qq.map((q, index) => `
-                        <details class="card"
-                            style="margin:10px 0">
-
-                            <summary>
-                                Question ${index + 1}
-                                ·
-                                ${quizAnswers[q.id] === q.correct_index
-                                    ? '✓ Correct'
-                                    : '✕ Review'}
-                            </summary>
-
-                            <p>${esc(q.prompt)}</p>
-
-                            <p>
-                                <strong>Answer:</strong>
-                                ${esc(q.options[q.correct_index])}
-                            </p>
-
-                            <p>${esc(q.explanation || '')}</p>
-                        </details>
-                    `).join('')}
-
-                    ${button('Retake Quiz', 'restartQuiz')}
-                </div>
-            `;
+                ${qq.map((q, index) => `
+                    <details class="card" style="margin:10px 0">
+                        <summary>Question ${index + 1} · ${quizAnswers[q.id] === Number(q.correct_index) ? '✓ Correct' : '✕ Review'}</summary>
+                        <p>${esc(q.prompt)}</p>
+                        <p><strong>Your Answer:</strong> ${quizAnswers[q.id] === undefined ? 'Not answered' : esc((q.options || [])[quizAnswers[q.id]] ?? 'Not answered')}</p>
+                        <p><strong>Correct Answer:</strong> ${esc((q.options || [])[Number(q.correct_index)])}</p>
+                        <p>${esc(q.explanation || '')}</p>
+                    </details>`).join('')}
+                <div style="margin-top:20px">${button(isMock ? '👑 New Mock OA' : '🪷 Retake Practice', 'restartQuiz')}</div>`;
         } else {
-            const q = qq[quizIndex];
-
+            const q = qq[Math.min(quizIndex, qq.length - 1)];
             body += `
                 <div class="card">
-                    <div class="row">
-                        <span class="pill">
-                            Question ${quizIndex + 1}
-                            / ${qq.length}
-                        </span>
-
-                        <span class="muted small">
-                            ${esc(q.topic || 'Practice')}
-                        </span>
-                    </div>
-
+                    <div class="row"><span class="pill">Question ${quizIndex + 1} / ${qq.length}</span><span class="muted small">${esc(q.topic || 'Practice')}</span></div>
                     <h3>${esc(q.prompt)}</h3>
-
                     ${(q.options || []).map((choice, index) => `
-                        <label class="answer">
-                            <input type="radio"
-                                name="quizAnswer"
-                                value="${index}"
-                                ${quizAnswers[q.id] === index
-                                    ? 'checked'
-                                    : ''}>
-
-                            ${String.fromCharCode(65 + index)}.
-                            ${esc(choice)}
-                        </label>
-                    `).join('')}
-
-                    <div style="margin-top:20px">
-                        ${button(
-                            quizIndex === qq.length - 1
-                                ? 'Submit Practice'
-                                : 'Next Question →',
-                            'quizNext'
-                        )}
-                    </div>
-                </div>
-            `;
+                        <label class="answer"><input type="radio" name="quizAnswer" value="${index}" ${quizAnswers[q.id] === index ? 'checked' : ''}>
+                            ${String.fromCharCode(65 + index)}. ${esc(choice)}
+                        </label>`).join('')}
+                    <div style="margin-top:20px">${button(quizIndex === qq.length - 1 ? (isMock ? '👑 Submit Mock OA' : 'Submit Practice') : 'Next Question →', 'quizNext')}</div>
+                </div>`;
         }
     }
 
@@ -2039,9 +2269,62 @@ async function importData() {
    QUIZ ENGINE
 ========================================== */
 
-async function quizNext() {
+
+let bayouExamSubmitting = false;
+async function bayouSubmitMockOA() {
+    if (!bayouExamStarted || quizDone || bayouExamSubmitting) return;
+    bayouExamSubmitting = true;
+    try {
+
     const c = active();
-    const qq = questions.filter(x => x.course_id === c.id);
+    if (!c) return;
+
+    const qq = bayouActiveQuestions(
+        questions.filter(q => q.course_id === c.id)
+    );
+
+    if (!qq.length) return;
+
+    const score = qq.filter(
+        q => quizAnswers[q.id] === Number(q.correct_index)
+    ).length;
+
+    const result = await sb.from('quiz_attempts').insert({
+        course_id: c.id,
+        score,
+        total: qq.length,
+        answers: { ...quizAnswers }
+    });
+
+    if (result.error) {
+        alert('Could not save Mock OA: ' + result.error.message);
+        return;
+    }
+
+    quizDone = true;
+
+    if (bayouExamTimer !== null) {
+        clearInterval(bayouExamTimer);
+        bayouExamTimer = null;
+    }
+
+    await loadPrivate();
+    render();
+    } finally {
+        bayouExamSubmitting = false;
+    }
+}
+
+async function quizNext() {
+        const c = active();
+    const qq = bayouActiveQuestions(
+        questions.filter(x => x.course_id === c.id)
+    );
+    if (!qq.length || quizDone) return;
+    if (bayouExamStarted && bayouExamTimed && bayouExamTimeRemaining() <= 0) {
+        await bayouSubmitMockOA();
+        return;
+    }
     const q = qq[quizIndex];
 
     const selected = document.querySelector(
@@ -2061,8 +2344,13 @@ async function quizNext() {
         return;
     }
 
+    if (bayouExamStarted) {
+        await bayouSubmitMockOA();
+        return;
+    }
+
     const score = qq.filter(
-        x => quizAnswers[x.id] === x.correct_index
+        x => quizAnswers[x.id] === Number(x.correct_index)
     ).length;
 
     const result = await sb.from('quiz_attempts').insert({
@@ -2103,12 +2391,18 @@ async function handle(action) {
     ];
 
     if (pages.includes(action)) {
+        if (bayouExamStarted && !quizDone && action !== 'study') {
+            if (!confirm('Leave your Mock OA? Unsaved answers will be discarded.')) return;
+            bayouResetExamSession();
+            bayouExamType = 'practice';
+        }
         view = action;
         render();
         return;
     }
 
     if (action === 'logout') {
+        bayouResetExamSession();
         if (sb) await sb.auth.signOut();
 
         session = null;
@@ -2178,15 +2472,87 @@ async function handle(action) {
         return;
     }
 
+    if (action === 'startMockOA') {
+        const c = active();
+
+        if (!c) return;
+
+        const available = questions.filter(
+            q => q.course_id === c.id
+        );
+
+        if (!available.length) {
+            alert('Add practice questions before starting a Mock OA.');
+            return;
+        }
+
+        const examType = document.querySelector(
+            '#bayouExamType'
+        )?.value || 'untimed';
+
+        if (examType === 'practice') {
+            alert('Choose Timed or Untimed Mock OA to begin.');
+            return;
+        }
+
+        const requestedLimit = Number(
+            document.querySelector(
+                '#bayouExamQuestionLimit'
+            )?.value || 25
+        );
+
+        const requestedMinutes = Number(
+            document.querySelector(
+                '#bayouExamMinutes'
+            )?.value || 60
+        );
+
+        bayouExamType = examType;
+        bayouExamTimed = examType === 'timed';
+
+        bayouExamQuestionLimit = Math.min(
+            available.length,
+            Math.max(1, Math.floor(requestedLimit) || 25)
+        );
+
+        bayouExamMinutes = Math.min(
+            240,
+            Math.max(1, Math.floor(requestedMinutes) || 60)
+        );
+
+        bayouResetExamSession();
+
+        bayouExamTimed = examType === 'timed';
+
+        bayouExamQuestionIds = bayouShuffleQuestions(
+            available
+        )
+            .slice(0, bayouExamQuestionLimit)
+            .map(q => q.id);
+
+        bayouExamStarted = true;
+
+        bayouExamDeadline = bayouExamTimed
+            ? Date.now() + bayouExamMinutes * 60000
+            : null;
+
+        studyTab = 'quiz';
+
+        bayouStartExamCountdown();
+
+        render();
+        return;
+    }
+
     if (action === 'quizNext') {
         return quizNext();
     }
 
     if (action === 'restartQuiz') {
-        quizIndex = 0;
-        quizAnswers = {};
-        quizDone = false;
+        bayouResetExamSession();
+        bayouExamType = 'practice';
         render();
+        return;
     }
 }
 
@@ -2207,6 +2573,11 @@ document.addEventListener('click', async event => {
 
     if (navigation) {
         event.preventDefault();
+        if (bayouExamStarted && !quizDone && navigation.dataset.view !== 'study') {
+            if (!confirm('Leave your Mock OA? Unsaved answers will be discarded.')) return;
+            bayouResetExamSession();
+            bayouExamType = 'practice';
+        }
         view = navigation.dataset.view;
         render();
         return;
@@ -2228,6 +2599,9 @@ document.addEventListener('click', async event => {
     const course = event.target.closest('[data-course]');
 
     if (course && owner) {
+        if (bayouExamStarted && !quizDone && !confirm('Switch courses and discard your Mock OA?')) return;
+        bayouResetExamSession();
+        bayouExamType = 'practice';
         activeCourse = course.dataset.course;
         view = 'study';
         studyTab = 'overview';
@@ -2245,10 +2619,16 @@ document.addEventListener('click', async event => {
     const tab = event.target.closest('[data-tab]');
 
     if (tab && owner) {
+        if (bayouExamStarted && !quizDone && tab.dataset.tab !== 'quiz') {
+            if (!confirm('Leave your Mock OA? Unsaved answers will be discarded.')) return;
+            bayouResetExamSession();
+            bayouExamType = 'practice';
+        } else if (!bayouExamStarted && tab.dataset.tab !== 'quiz') {
+            quizIndex = 0;
+            quizAnswers = {};
+            quizDone = false;
+        }
         studyTab = tab.dataset.tab;
-        quizIndex = 0;
-        quizAnswers = {};
-        quizDone = false;
         render();
         return;
     }
@@ -2278,6 +2658,30 @@ document.addEventListener('click', async event => {
 ========================================== */
 
 document.addEventListener('change', async event => {
+    
+    if (event.target.matches('input[name="bayouMode"]') && owner) {
+        if (bayouExamStarted && !quizDone) return;
+        const newMode = event.target.value;
+
+        if (newMode === bayouQuizMode) return;
+
+        if (quizIndex > 0 && !quizDone &&
+            !confirm('Switch modes and restart this practice session?')) {
+            render();
+            return;
+        }
+
+        bayouQuizMode = newMode;
+        bayouQuizQuestionIds = [];
+
+        quizIndex = 0;
+        quizAnswers = {};
+        quizDone = false;
+
+        render();
+        return;
+    }
+
     if (event.target.matches('[data-status]') && owner) {
         const c = courses.find(
             x => x.id === event.target.dataset.status
@@ -2308,6 +2712,12 @@ document.addEventListener('change', async event => {
     }
 
     if (event.target.id === 'studyCourse' && owner) {
+        if (bayouExamStarted && !quizDone && !confirm('Switch courses and discard your Mock OA?')) {
+            render();
+            return;
+        }
+        bayouResetExamSession();
+        bayouExamType = 'practice';
         activeCourse = event.target.value;
         flashIndex = 0;
         flipped = false;
@@ -2385,6 +2795,7 @@ document.addEventListener('submit', async event => {
 if (ready) {
     sb.auth.onAuthStateChange(event => {
         if (event === 'SIGNED_OUT') {
+            bayouResetExamSession();
             owner = false;
             session = null;
             view = 'home';
