@@ -809,8 +809,51 @@ function shell(title, content) {
    PRIVATE DASHBOARD
 ========================================== */
 
+/* ==========================================
+   🏆 ROYAL STUDY REWARDS
+   Computed from saved quiz_attempts (no new tables).
+========================================== */
+const bayouRewardCatalog = [
+    { id: 'first', icon: '🪷', title: 'First Bloom', description: 'Complete your first practice attempt.', goal: 1, metric: 'attempts' },
+    { id: 'fire', icon: '🔥', title: 'Bayou on Fire', description: 'Complete 5 practice attempts.', goal: 5, metric: 'attempts' },
+    { id: 'knowledge', icon: '🧠', title: 'Knowledge Royalty', description: 'Score at least 80% on an assessment.', goal: 1, metric: 'highScores' },
+    { id: 'mock', icon: '👑', title: 'Mock OA Queen', description: 'Complete your first tracked Mock OA.', goal: 1, metric: 'mockOAs' },
+    { id: 'perfect', icon: '💎', title: 'Royal Perfection', description: 'Earn 100% on an assessment.', goal: 1, metric: 'perfectScores' },
+    { id: 'scholar', icon: '🌸', title: 'Study Scholar', description: 'Complete 10 practice attempts.', goal: 10, metric: 'attempts' }
+];
+
+function bayouStudyRewards(savedAttempts = attempts) {
+    const valid = savedAttempts.filter(a => Number(a.total) > 0);
+    const metrics = {
+        attempts: valid.length,
+        highScores: valid.filter(a => Number(a.score) / Number(a.total) >= 0.8).length,
+        perfectScores: valid.filter(a => Number(a.score) === Number(a.total)).length,
+        mockOAs: valid.filter(a =>
+            a.answers && typeof a.answers === 'object' &&
+            ['timed', 'untimed'].includes(a.answers.__bayouExamType)
+        ).length
+    };
+    return bayouRewardCatalog.map(reward => {
+        const count = metrics[reward.metric] || 0;
+        return { ...reward, count, unlocked: count >= reward.goal,
+            percent: Math.min(100, pct(count, reward.goal)) };
+    });
+}
+
+function bayouRewardCard(reward, compact = false) {
+    return `<div class="card" style="border-color:${reward.unlocked ? '#E7C987' : 'var(--line)'};opacity:${reward.unlocked ? '1' : '.78'};${compact ? 'padding:14px' : ''}">
+        <div style="font-size:${compact ? '26px' : '34px'}">${reward.unlocked ? reward.icon : '🔒'}</div>
+        <h3 style="margin:8px 0">${esc(reward.title)}</h3>
+        ${compact ? '' : `<p class="small muted">${esc(reward.description)}</p>`}
+        <span class="pill">${reward.unlocked ? '✨ Unlocked' : `${Math.min(reward.count, reward.goal)}/${reward.goal} progress`}</span>
+        ${reward.unlocked ? '' : `<div class="bar" style="margin-top:12px"><i style="width:${reward.percent}%"></i></div>`}
+    </div>`;
+}
+
 function dashboard() {
     const stats = progressStats(courses);
+    const rewards = bayouStudyRewards();
+    const unlockedRewards = rewards.filter(r => r.unlocked);
     
     const remainingCU = stats.total - stats.earned;
 
@@ -884,6 +927,19 @@ function dashboard() {
                 Based on your course tracker.
                 Verify official credits with WGU.
             </p>
+        </div>
+
+        <div class="card" style="margin-top:16px;border-color:#E7C987">
+            <div class="row" style="gap:12px;flex-wrap:wrap">
+                <div><div class="eyebrow">✨ Your Study Milestones</div><h3>🏆 Royal Trophy Case</h3></div>
+                <span class="pill">${unlockedRewards.length}/${rewards.length} Badges Unlocked</span>
+            </div>
+            <div class="grid" style="margin:14px 0">
+                ${(unlockedRewards.length ? [...unlockedRewards].reverse().slice(0, 3) : rewards.slice(0, 3))
+                    .map(r => bayouRewardCard(r, true)).join('')}
+            </div>
+            <p class="small muted">${unlockedRewards.length ? 'Your hard work is blooming! 💗' : 'Your first badge unlocks after your first saved practice attempt.'}</p>
+            ${button('👑 View All Achievements', 'studyRewards')}
         </div>
 
         <div class="grid two" style="margin-top:16px">
@@ -1225,6 +1281,45 @@ function bayouQuizQuestions(questionList) {
         .filter(Boolean);
 }
 
+/* ==========================================
+   📊 BAYOU COMPETENCY PERFORMANCE
+   Derived from saved answers; no new DB tables.
+========================================== */
+function bayouCompetencyStats(courseQuestions, courseAttempts) {
+    const byId = new Map(courseQuestions.map(q => [String(q.id), q]));
+    const topics = new Map();
+    const topicFor = q => String(q.topic || '').trim() || 'Uncategorized';
+
+    for (const q of courseQuestions) {
+        const name = topicFor(q);
+        if (!topics.has(name)) {
+            topics.set(name, { name, available: 0, answered: 0, correct: 0 });
+        }
+        topics.get(name).available++;
+    }
+
+    for (const attempt of courseAttempts) {
+        const answers = attempt.answers;
+        if (!answers || typeof answers !== 'object' || Array.isArray(answers)) continue;
+        for (const [id, answer] of Object.entries(answers)) {
+            const q = byId.get(String(id));
+            if (!q || answer === null || answer === undefined || answer === '') continue;
+            const row = topics.get(topicFor(q));
+            row.answered++;
+            if (Number(answer) === Number(q.correct_index)) row.correct++;
+        }
+    }
+
+    return [...topics.values()].map(row => ({
+        ...row,
+        accuracy: row.answered ? pct(row.correct, row.answered) : null
+    })).sort((a, b) => {
+        if (a.accuracy === null) return 1;
+        if (b.accuracy === null) return -1;
+        return a.accuracy - b.accuracy || a.name.localeCompare(b.name);
+    });
+}
+
 function studyPage() {
     const c = active();
 
@@ -1239,6 +1334,9 @@ function studyPage() {
         questions.filter(x => x.course_id === c.id)
     );
     const aa = attempts.filter(x => x.course_id === c.id);
+    const competencyStats = bayouCompetencyStats(
+        questions.filter(x => x.course_id === c.id), aa
+    );
 
     
     // ==========================================
@@ -1270,6 +1368,8 @@ function studyPage() {
         ['overview', 'Overview'],
         ['flashcards', `Flashcards (${cc.length})`],
         ['quiz', `Practice Quiz (${qq.length})`],
+        ['mastery', '📊 Competencies'],
+        ['rewards', '🏆 Achievements'],
         ['history', 'Attempt History']
     ];
 
@@ -1571,6 +1671,64 @@ function studyPage() {
                     <div style="margin-top:20px">${button(quizIndex === qq.length - 1 ? (isMock ? '👑 Submit Mock OA' : 'Submit Practice') : 'Next Question →', 'quizNext')}</div>
                 </div>`;
         }
+    }
+
+    if (studyTab === 'mastery') {
+        const practiced = competencyStats.filter(t => t.answered > 0);
+        const needsWork = practiced.filter(t => t.accuracy < 70).length;
+        const totalAnswered = practiced.reduce((sum, t) => sum + t.answered, 0);
+        const totalCorrect = practiced.reduce((sum, t) => sum + t.correct, 0);
+
+        body += `
+            <div class="card" style="margin:18px 0;border-color:#FF9FCB">
+                <div class="eyebrow">📊 Your Private Learning Insights</div>
+                <h3>👑 Competency Performance Tracker</h3>
+                <p class="muted">Built from your saved practice answers and Mock OA attempts for ${esc(c.title)}.</p>
+                <div class="stats" style="margin:16px 0">
+                    <div class="card stat"><strong>${competencyStats.length}</strong><small>Topics in Question Bank</small></div>
+                    <div class="card stat"><strong>${totalAnswered}</strong><small>Recorded Answers</small></div>
+                    <div class="card stat"><strong>${totalAnswered ? pct(totalCorrect, totalAnswered) + '%' : '—'}</strong><small>Overall Accuracy</small></div>
+                    <div class="card stat"><strong>${needsWork}</strong><small>Topics to Revisit</small></div>
+                </div>
+                <p class="small muted">Personal study guide only. The 70% and 80% bands below are custom goals, not WGU passing standards. Unanswered questions are not included in topic accuracy.</p>
+            </div>
+            ${competencyStats.length ? competencyStats.map(t => `
+                <div class="card" style="margin:12px 0">
+                    <div class="row" style="gap:10px;flex-wrap:wrap">
+                        <h3 style="margin:0">${esc(t.name)}</h3>
+                        <span class="pill">${t.accuracy === null ? '🌱 Not practiced' : t.accuracy >= 80 ? '👑 Strong' : t.accuracy >= 70 ? '🪷 Developing' : '💗 Review next'}</span>
+                    </div>
+                    <p class="small muted">${t.available} questions available · ${t.answered} recorded answers · ${t.correct} correct</p>
+                    <div class="row" style="align-items:center;gap:12px">
+                        <div class="bar" style="flex:1"><i style="width:${t.accuracy ?? 0}%"></i></div>
+                        <strong>${t.accuracy === null ? '—' : t.accuracy + '%'}</strong>
+                    </div>
+                </div>
+            `).join('') : `
+                <div class="card empty">Add practice questions with topics to see your competency breakdown.</div>
+            `}
+            <p class="small muted" style="margin-top:16px">Repeated attempts count as additional practice. Results for questions removed from your current question bank cannot be categorized here.</p>
+        `;
+    }
+
+    if (studyTab === 'rewards') {
+        const rewards = bayouStudyRewards();
+        const unlocked = rewards.filter(r => r.unlocked).length;
+        const next = rewards.find(r => !r.unlocked);
+        body += `
+            <div class="card" style="margin:18px 0;border-color:#E7C987">
+                <div class="eyebrow">💗 Your Royal Study Journey</div>
+                <h3>🏆 Achievement Collection</h3>
+                <p class="muted">Badges are earned automatically from saved practice across all your courses.</p>
+                <div class="stats" style="margin:16px 0">
+                    <div class="card stat"><strong>${unlocked}/${rewards.length}</strong><small>Unlocked Badges</small></div>
+                    <div class="card stat"><strong>${pct(unlocked, rewards.length)}%</strong><small>Collection Complete</small></div>
+                </div>
+                ${next ? `<p><strong>✨ Next milestone:</strong> ${esc(next.title)} — ${Math.min(next.count, next.goal)}/${next.goal}</p>` : '<p>👑 Every badge unlocked! You did that!</p>'}
+                <p class="small muted">Mock OA badges require the assessment type to be saved. Older attempts without that information are not counted as Mock OAs.</p>
+            </div>
+            <div class="grid two">${rewards.map(r => bayouRewardCard(r)).join('')}</div>
+        `;
     }
 
     if (studyTab === 'history') {
@@ -2293,7 +2451,7 @@ async function bayouSubmitMockOA() {
         course_id: c.id,
         score,
         total: qq.length,
-        answers: { ...quizAnswers }
+        answers: { ...quizAnswers, __bayouExamType: bayouExamTimed ? 'timed' : 'untimed' }
     });
 
     if (result.error) {
@@ -2397,6 +2555,13 @@ async function handle(action) {
             bayouExamType = 'practice';
         }
         view = action;
+        render();
+        return;
+    }
+
+    if (action === 'studyRewards') {
+        view = 'study';
+        studyTab = 'rewards';
         render();
         return;
     }
