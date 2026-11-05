@@ -18,7 +18,12 @@ const app = document.querySelector('#app');
 
 let session = null;
 let owner = false;
-let view = 'home';
+const bayouPages = new Set(['home','catalog','publicCourse','resources','login','dashboard','courses','study','vault','planner','private','admin']);
+function bayouInitialView() {
+    const route = decodeURIComponent(location.hash.slice(1).split('?')[0]);
+    return bayouPages.has(route) ? route : 'home';
+}
+let view = bayouInitialView();
 
 let courses = [];
 let resources = [];
@@ -27,6 +32,10 @@ let questions = [];
 let attempts = [];
 let publicItems = [];
 let publicCourses = [];
+let studySessions = [];
+let plannerMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+let plannerSelectedDay = `${new Date().getFullYear()}-${String(new Date().getMonth()+1).padStart(2,'0')}-${String(new Date().getDate()).padStart(2,'0')}`;
+let plannerEditingId = null;
 
 let activeCourse = null;
 let selectedPublicCourse = null;
@@ -249,7 +258,8 @@ async function loadPrivate() {
         'resources',
         'flashcards',
         'quiz_questions',
-        'quiz_attempts'
+        'quiz_attempts',
+        'study_sessions'
     ];
 
     const results = await Promise.all(
@@ -271,7 +281,8 @@ async function loadPrivate() {
         resources,
         cards,
         questions,
-        attempts
+        attempts,
+        studySessions
     ] = results.map(result => result.data || []);
 }
 
@@ -299,6 +310,11 @@ function nav() {
 }
 
 function render() {
+    // Keep the address bar in sync so refresh restores the current page.
+    // replaceState avoids a duplicate browser-history entry on every render.
+    if (bayouPages.has(view) && location.hash !== '#' + view) {
+        history.replaceState(null, '', '#' + view);
+    }
     nav();
 
     if (view === 'home') return home();
@@ -582,7 +598,7 @@ function resourceCards(items) {
                         ${esc(resource.kind || 'Study Resource')}
                     </span>
 
-                    <h3>${esc(resource.title)}</h3>
+                    <h3>${resource.url ? `<a href="${esc(resource.url)}" target="_blank" rel="noopener noreferrer" style="color:inherit;text-decoration:underline;text-decoration-color:#f58ec4;text-underline-offset:4px" title="Open resource in a new tab">${esc(resource.title)} ↗</a>` : esc(resource.title)}</h3>
 
                     <p>${esc(resource.description || '')}</p>
 
@@ -621,6 +637,8 @@ function bayouPublicMemoryTricks() {
         <div class="eyebrow" style="color:#F5A4C9">D658 · OA Study Strategies</div>
         <h2 style="color:#FFFFFF">💗 D658 Memory Tricks</h2>
         <p style="color:#F0D9DD">Pink, brown & black study mnemonics · connect each memory trick to a classroom scenario.</p>
+        ${royalAchievementPanel()}
+
         <div class="grid two" style="margin-top:16px">
         ${bayouD658Mnemonics.map(([icon,topic,trick,meaning]) => `<article style="padding:16px;border:1px solid #8C5A69;border-radius:14px;background:#332329">
             <div style="color:#F5A4C9;font-weight:700">${icon} ${esc(topic)}</div>
@@ -889,6 +907,63 @@ function bayouRewardCard(reward, compact = false) {
     </div>`;
 }
 
+
+/* ==========================================
+   PHASE 12 — ROYAL DEGREE MILESTONES
+========================================== */
+function royalMilestones() {
+    const stats = progressStats(courses);
+    const milestones = [25, 50, 75, 100].map((level, index) => {
+        const target = Math.ceil(stats.total * level / 100);
+        return {level, target, unlocked: stats.total > 0 && stats.earned >= target,
+            icon: ['🌸','🪷','👑','🏰'][index],
+            name: ['First Bloom','Bayou Blossoms','Royal Crown','Degree Royalty'][index]};
+    });
+    const next = milestones.find(m => !m.unlocked);
+    return {stats, milestones, next};
+}
+function royalAchievementPanel() {
+    const {stats, milestones, next} = royalMilestones();
+    const finished = courses.filter(isDone);
+    const history = [...finished].sort((a,b) => {
+        const ad = a.completed_at ? new Date(a.completed_at).getTime() : 0;
+        const bd = b.completed_at ? new Date(b.completed_at).getTime() : 0;
+        return bd - ad;
+    });
+    return `
+        <div class="card" style="margin:20px 0;border-color:#e7c987">
+            <div class="row" style="flex-wrap:wrap;gap:12px">
+                <div><div class="eyebrow">👑 Phase 12 · Degree Achievements</div><h3>Royal Bayou Milestones</h3></div>
+                <span class="pill">${stats.earned}/${stats.total} CUs earned</span>
+            </div>
+            <div class="grid" style="margin:14px 0">
+                ${milestones.map(m => `<div class="card" style="text-align:center;opacity:${m.unlocked ? '1' : '.65'}">
+                    <div style="font-size:32px">${m.unlocked ? m.icon : '🔒'}</div>
+                    <strong>${m.level}% · ${esc(m.name)}</strong>
+                    <p class="small muted">${m.target} CUs · ${m.unlocked ? '✨ Unlocked!' : 'Not yet unlocked'}</p>
+                </div>`).join('')}
+            </div>
+            <h3>✨ Next Milestone</h3>
+            <p>${!stats.total ? 'Add your program courses and credit units to begin.' : next ? `<strong>${Math.max(0,next.target-stats.earned)} more CUs</strong> until ${next.level}% — ${esc(next.name)}!` : '🏆 All four degree milestones unlocked!'}</p>
+            <div class="bar"><i style="width:${stats.percent}%"></i></div>
+        </div>
+        <div class="card" style="margin:20px 0;border-color:var(--pink)">
+            <div class="eyebrow">🪷 Every completed course makes the garden grow</div>
+            <h3>Bayou Achievement Garden</h3>
+            <div style="display:flex;flex-wrap:wrap;gap:10px;margin:18px 0;font-size:30px;line-height:1.5" aria-label="${finished.length} completed courses">
+                ${finished.length ? finished.map((c,i) => `<span title="${esc(c.code || c.title)}" aria-label="${esc(c.title)}">${['🌸','🪷','🌺','🌷','🌼'][i%5]}</span>`).join('') : '<span class="muted small">Your first flower blooms when a course is Passed or Transferred. 🌱</span>'}
+            </div>
+            <p class="small muted">${finished.length} flowers grown · One for each Passed or Transferred course. Changes automatically with your Course Console.</p>
+        </div>
+        <div class="card" style="margin:20px 0">
+            <h3>📚 Course Completion History</h3>
+            <p class="small muted">Completion dates are saved when you mark a course Passed or Transferred. For older completions, use Edit to enter the real date.</p>
+            ${history.length ? `<div class="tablewrap"><table><thead><tr><th>Course</th><th>Code</th><th>CUs</th><th>Completion date</th></tr></thead><tbody>
+                ${history.map(c => `<tr><td>${esc(c.title)}</td><td>${esc(c.code)}</td><td>${fmt(c.cu)}</td><td>${c.completed_at ? esc(String(c.completed_at).slice(0,10)) : 'Date not recorded'}</td></tr>`).join('')}
+            </tbody></table></div>` : '<p class="muted">No completed courses recorded yet.</p>'}
+        </div>`;
+}
+
 function dashboard() {
     const stats = progressStats(courses);
     const rewards = bayouStudyRewards();
@@ -1024,6 +1099,13 @@ function dashboard() {
 ========================================== */
 
 function coursePage() {
+    const stats = progressStats(courses);
+    const remainingCourses = stats.count - stats.completed;
+    const remainingCU = Math.max(0, stats.total - stats.earned);
+    const statusCounts = statusOptions.map(status => ({
+        status,
+        count: courses.filter(course => course.status === status).length
+    }));
     const filtered = courses.filter(c =>
         [c.title, c.code, c.domain]
             .join(' ')
@@ -1038,75 +1120,34 @@ function coursePage() {
             Changes update your public Course Garden.
         </p>
 
-        
-        <div class="card" style="margin:22px 0;border-color:var(--pink)">
-            <div class="row">
+        <div class="card" style="margin:20px 0;border-color:var(--pink)">
+            <div class="row" style="gap:12px;flex-wrap:wrap">
                 <div>
-                    <div class="eyebrow">Your Official Progress Guide</div>
-                    <h3>🪷 Bayou Status Key</h3>
+                    <div class="eyebrow">👑 Live from your Course Console</div>
+                    <h3>Royal Degree Progress</h3>
                 </div>
-                <span class="pill">6 Course Statuses</span>
+                <span class="pill">${stats.percent}% Complete</span>
             </div>
-
-            <div class="bayou-status-key">
-
-                <div class="bayou-key-item" style="--key-color:#B99AD9">
-                    <span class="bayou-key-icon">🌱</span>
-                    <div>
-                        <strong>Seeds Awaiting</strong>
-                        <p>Courses awaiting evaluation or confirmation.</p>
-                        <small>Maps to: Needs Evaluation</small>
-                    </div>
-                </div>
-
-                <div class="bayou-key-item" style="--key-color:#A9B5A7">
-                    <span class="bayou-key-icon">🪷</span>
-                    <div>
-                        <strong>Lily Pad Locked</strong>
-                        <p>Courses waiting for their turn in your journey.</p>
-                        <small>Maps to: Not Started</small>
-                    </div>
-                </div>
-
-                <div class="bayou-key-item" style="--key-color:#FF9FCB">
-                    <span class="bayou-key-icon">✨</span>
-                    <div>
-                        <strong>Bayou in Bloom</strong>
-                        <p>The course you're actively working on.</p>
-                        <small>Maps to: In Progress</small>
-                    </div>
-                </div>
-
-                <div class="bayou-key-item" style="--key-color:#78D6A2">
-                    <span class="bayou-key-icon">👑</span>
-                    <div>
-                        <strong>Royal Bloom</strong>
-                        <p>Courses you've successfully completed.</p>
-                        <small>Maps to: Passed</small>
-                    </div>
-                </div>
-
-                <div class="bayou-key-item" style="--key-color:#E7C987">
-                    <span class="bayou-key-icon">🗝️</span>
-                    <div>
-                        <strong>Golden Passage</strong>
-                        <p>Credits you've already earned through transfer.</p>
-                        <small>Maps to: Transferred</small>
-                    </div>
-                </div>
-
-                <div class="bayou-key-item" style="--key-color:#82A6BE">
-                    <span class="bayou-key-icon">🌙</span>
-                    <div>
-                        <strong>Moonlit Pause</strong>
-                        <p>Courses temporarily paused.</p>
-                        <small>Maps to: On Hold</small>
-                    </div>
-                </div>
-
+            <div class="stats" style="margin:14px 0">
+                <div class="card stat"><strong>${stats.completed}</strong><small>Completed Courses</small></div>
+                <div class="card stat"><strong>${remainingCourses}</strong><small>Courses Remaining</small></div>
+                <div class="card stat"><strong>${stats.earned}</strong><small>CUs Earned</small></div>
+                <div class="card stat"><strong>${remainingCU}</strong><small>CUs Remaining</small></div>
             </div>
+            <div class="row" style="gap:12px;flex-wrap:wrap">
+                <strong>${stats.earned} / ${stats.total} CUs</strong>
+                <span class="small muted">${stats.count} courses tracked</span>
+            </div>
+            <div class="bar" role="progressbar" aria-label="Degree credit progress" aria-valuenow="${stats.percent}" aria-valuemin="0" aria-valuemax="100" style="margin-top:10px">
+                <i style="width:${stats.percent}%"></i>
+            </div>
+            <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:16px">
+                ${statusCounts.map(({status,count}) => `<span class="pill">${esc(getBayouStatus(status).name)}: ${count}</span>`).join('')}
+            </div>
+            <p class="small muted" style="margin-top:12px">Updates automatically when you save a course. Passed and Transferred count toward earned CUs. This is your personal tracker, not an official WGU record.</p>
         </div>
 
+        ${royalAchievementPanel()}
 
         <div class="row" style="margin:16px 0">
             <input id="courseSearch"
@@ -1183,6 +1224,74 @@ function coursePage() {
                     }).join('')}
                 </tbody>
             </table>
+        </div>
+
+        <div class="card" style="margin:22px 0;border-color:var(--pink)">
+            <div class="row">
+                <div>
+                    <div class="eyebrow">Your Official Progress Guide</div>
+                    <h3>🪷 Bayou Status Key</h3>
+                </div>
+                <span class="pill">6 Course Statuses</span>
+            </div>
+
+            <div class="bayou-status-key">
+
+                <div class="bayou-key-item" style="--key-color:#B99AD9">
+                    <span class="bayou-key-icon">🌱</span>
+                    <div>
+                        <strong>Seeds Awaiting</strong>
+                        <p>Courses awaiting evaluation or confirmation.</p>
+                        <small>Maps to: Needs Evaluation</small>
+                    </div>
+                </div>
+
+                <div class="bayou-key-item" style="--key-color:#A9B5A7">
+                    <span class="bayou-key-icon">🪷</span>
+                    <div>
+                        <strong>Lily Pad Locked</strong>
+                        <p>Courses waiting for their turn in your journey.</p>
+                        <small>Maps to: Not Started</small>
+                    </div>
+                </div>
+
+                <div class="bayou-key-item" style="--key-color:#FF9FCB">
+                    <span class="bayou-key-icon">✨</span>
+                    <div>
+                        <strong>Bayou in Bloom</strong>
+                        <p>The course you're actively working on.</p>
+                        <small>Maps to: In Progress</small>
+                    </div>
+                </div>
+
+                <div class="bayou-key-item" style="--key-color:#78D6A2">
+                    <span class="bayou-key-icon">👑</span>
+                    <div>
+                        <strong>Royal Bloom</strong>
+                        <p>Courses you've successfully completed.</p>
+                        <small>Maps to: Passed</small>
+                    </div>
+                </div>
+
+                <div class="bayou-key-item" style="--key-color:#E7C987">
+                    <span class="bayou-key-icon">🗝️</span>
+                    <div>
+                        <strong>Golden Passage</strong>
+                        <p>Credits you've already earned through transfer.</p>
+                        <small>Maps to: Transferred</small>
+                    </div>
+                </div>
+
+                <div class="bayou-key-item" style="--key-color:#82A6BE">
+                    <span class="bayou-key-icon">🌙</span>
+                    <div>
+                        <strong>Moonlit Pause</strong>
+                        <p>Courses temporarily paused.</p>
+                        <small>Maps to: On Hold</small>
+                    </div>
+                </div>
+
+            </div>
         </div>
     `);
 }
@@ -1861,41 +1970,31 @@ function studyPage() {
 ========================================== */
 
 function vaultPage() {
+    const published = publicItems.filter(r => r.published !== false);
+    const privateCards = resources.map(r => ({...r, _visibility:'private'}));
+    const publicCards = published.map(r => ({...r, _visibility:'public'}));
+    const all = [...privateCards, ...publicCards];
     shell('✨ Resource Vault', `
-        <div class="row">
-            <p class="muted">
-                Private resources imported from your workbook.
-            </p>
-
-            ${button('+ Add Link', 'addResource')}
+        <div class="row" style="align-items:center;flex-wrap:wrap;gap:14px">
+            <p class="muted">Manage study resources for your courses. Choose what stays private and what your visitors can see.</p>
+            ${button('+ Add Resource', 'addResource')}
         </div>
-
         <div class="grid two">
-            ${resources.map(r => `
-                <div class="card">
-                    <span class="pill">
-                        ${esc(r.area || 'Resource')}
-                        · ${esc(r.format || 'Link')}
-                    </span>
-
-                    <h3>${esc(r.title)}</h3>
-
-                    <p>
-                        ${esc(r.topic || '')}
-                        · ${esc(r.purpose || '')}
-                    </p>
-
-                    <a href="${esc(r.url)}"
-                        target="_blank"
-                        rel="noopener noreferrer">
-                        Open Resource ↗
-                    </a>
-                </div>
-            `).join('') || `
-                <div class="card empty">
-                    Import your resource vault to begin.
-                </div>
-            `}
+            ${all.map(r => {
+                const c = courses.find(c => c.code && c.code.toLowerCase() === String(r.course_code || r.area || '').toLowerCase());
+                const code = r.course_code || (c ? c.code : r.area) || 'General';
+                return `<article class="card">
+                    <span class="pill">${r._visibility === 'public' ? '🌸 Public' : '🔒 Private'} · ${esc(code)} · ${esc(r.kind || r.format || 'Link')}</span>
+                    <h3>${r.url ? `<a href="${esc(r.url)}" target="_blank" rel="noopener noreferrer" style="color:inherit;text-decoration:underline;text-decoration-color:#f58ec4;text-underline-offset:4px" title="Open resource in a new tab">${esc(r.title)} ↗</a>` : esc(r.title)}</h3>
+                    <p>${esc(r.description || r.purpose || r.topic || '')}</p>
+                    ${r.url ? `<a href="${esc(r.url)}" target="_blank" rel="noopener noreferrer">Open Resource ↗</a>` : ''}
+                    ${r.body ? `<details><summary>Read Study Guide</summary><p style="white-space:pre-wrap">${esc(r.body)}</p></details>` : ''}
+                    <div class="actions" style="margin-top:14px">
+                        <button type="button" class="btn secondary" data-vault-edit="${esc(r.id)}" data-vault-type="${r._visibility}">✏️ Edit / Visibility</button>
+                        <button type="button" class="btn secondary" data-vault-delete="${esc(r.id)}" data-vault-type="${r._visibility}" style="border-color:#b65c73;color:#f4a6ba">🗑️ Delete</button>
+                    </div>
+                </article>`;
+            }).join('') || `<div class="card empty">No resources yet. Select + Add Resource to begin. ✨</div>`}
         </div>
     `);
 }
@@ -1904,33 +2003,82 @@ function vaultPage() {
    PRIVATE STUDY PLANNER
 ========================================== */
 
+const plannerLocalDate = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+const plannerDate = iso => plannerLocalDate(new Date(iso));
+const plannerTime = iso => new Date(iso).toLocaleTimeString([], {hour:'numeric', minute:'2-digit'});
+const plannerCourse = id => courses.find(c => c.id === id);
+const plannerHtmlDateTime = iso => {
+    const d = new Date(iso);
+    return `${plannerLocalDate(d)}T${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+};
 function plannerPage() {
+    const monthStart = new Date(plannerMonth.getFullYear(), plannerMonth.getMonth(), 1);
+    const firstWeekday = monthStart.getDay();
+    const daysInMonth = new Date(monthStart.getFullYear(), monthStart.getMonth()+1, 0).getDate();
+    const today = plannerLocalDate(new Date());
+    const sorted = [...studySessions].sort((a,b) => new Date(a.starts_at)-new Date(b.starts_at));
+    const chosen = sorted.filter(s => plannerDate(s.starts_at) === plannerSelectedDay);
+    const weekStart = new Date(); weekStart.setHours(0,0,0,0); weekStart.setDate(weekStart.getDate()-weekStart.getDay());
+    const weekEnd = new Date(weekStart); weekEnd.setDate(weekEnd.getDate()+7);
+    const weekly = sorted.filter(s => new Date(s.starts_at)>=weekStart && new Date(s.starts_at)<weekEnd);
+    const done = weekly.filter(s => s.completed).length;
+    const totalMinutes = weekly.reduce((sum,s) => sum+(new Date(s.ends_at)-new Date(s.starts_at))/60000,0);
+    const editing = studySessions.find(s => s.id === plannerEditingId);
+    const startDefault = editing ? plannerHtmlDateTime(editing.starts_at) : `${plannerSelectedDay}T19:30`;
+    const endDefault = editing ? plannerHtmlDateTime(editing.ends_at) : `${plannerSelectedDay}T20:15`;
+    const courseOptions = courses.map(c=>`<option value="${esc(c.id)}" ${editing?.course_id===c.id?'selected':''}>${esc(c.code)} — ${esc(c.title)}</option>`).join('');
+    const calendar = Array.from({length:firstWeekday},()=>'<div></div>').concat(Array.from({length:daysInMonth},(_,i)=>{
+        const date=plannerLocalDate(new Date(monthStart.getFullYear(),monthStart.getMonth(),i+1));
+        const events=sorted.filter(s=>plannerDate(s.starts_at)===date);
+        return `<button type="button" data-planner-day="${date}" aria-label="${date}, ${events.length} sessions" style="min-height:67px;border-radius:12px;border:1px solid ${date===plannerSelectedDay?'#ec83b2':'#cbb7b955'};background:${date===plannerSelectedDay?'#f5d5e7':date===today?'#fcecf5':'#fff9fb'};color:#473038;text-align:left;padding:7px;cursor:pointer"><strong>${i+1}</strong><div style="font-size:11px;margin-top:5px">${events.length?`${events.filter(x=>x.completed).length}/${events.length} ✓ · ${events.length} 📚`:''}</div></button>`;
+    })).join('');
+    const eventCard = s => `<article class="card" style="margin-bottom:10px;padding:16px">
+        <div style="display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:center"><div><strong>${esc(s.title)}</strong> ${s.completed?'✅':''}<p class="muted" style="margin:4px 0">${esc(plannerTime(s.starts_at))} – ${esc(plannerTime(s.ends_at))}${s.course_id?` · ${esc(plannerCourse(s.course_id)?.code || 'Course')}`:''}</p>${s.notes?`<p style="white-space:pre-wrap;margin:5px 0">${esc(s.notes)}</p>`:''}</div>
+        <div class="actions"><button type="button" class="btn secondary" data-planner-toggle="${esc(s.id)}">${s.completed?'↩ Undo':'✓ Complete'}</button><button type="button" class="btn secondary" data-planner-edit="${esc(s.id)}">✏️ Edit</button><button type="button" class="btn secondary" data-planner-delete="${esc(s.id)}">🗑️ Delete</button></div></div></article>`;
     shell('🌙 Bayou Study Planner', `
-        <div class="card">
-            <span class="eyebrow">
-                After-Hours Study Mode
-            </span>
-
-            <h3>Your Study Routine</h3>
-
-            <p>
-                Weekday study blocks from your spreadsheet:
-            </p>
-
-            <p>7:30–8:15 PM</p>
-            <p>8:25–9:10 PM</p>
-            <p>9:20–9:40 PM</p>
-
-            <p class="muted">
-                Weekends remain flexible.
-            </p>
-
-            <div class="notice">
-                Editable calendar events and reminders
-                will be added in a later update.
-            </div>
+        <div class="card"><span class="eyebrow">After-Hours Study Mode</span><h3>Your Study Routine</h3><p>Weekdays: 7:30–8:15 PM · 8:25–9:10 PM · 9:20–9:40 PM</p><p class="muted">Weekends remain flexible. These are suggested study blocks, not automatic calendar events.</p></div>
+        <div class="grid three" style="margin:16px 0">
+            <div class="card"><span class="eyebrow">This Week</span><h3>${weekly.length} sessions</h3></div>
+            <div class="card"><span class="eyebrow">Completed</span><h3>${done} / ${weekly.length}</h3></div>
+            <div class="card"><span class="eyebrow">Planned Study Time</span><h3>${(totalMinutes/60).toFixed(1)} hours</h3></div>
         </div>
+        <div class="card" style="margin-bottom:16px">
+            <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap"><h3 style="margin:0">📅 ${esc(monthStart.toLocaleDateString(undefined,{month:'long',year:'numeric'}))}</h3><div class="actions"><button type="button" class="btn secondary" data-planner-month="-1">← Previous</button><button type="button" class="btn secondary" data-planner-today="1">Today</button><button type="button" class="btn secondary" data-planner-month="1">Next →</button></div></div>
+            <div style="display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:5px;margin-top:15px">${['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].map(d=>`<div style="text-align:center;font-size:12px;font-weight:700">${d}</div>`).join('')}${calendar}</div>
+        </div>
+        <div class="card" style="margin-bottom:16px"><h3>${editing?'✏️ Edit Study Session':'💗 Schedule a Study Session'}</h3>
+            <form id="plannerForm" style="display:grid;gap:12px">
+                <label>Session Title <input name="title" required maxlength="160" value="${esc(editing?.title || '')}" placeholder="e.g., D658 Assessment Practice"></label>
+                <label>WGU Course <select name="course_id"><option value="">General Study / No Course</option>${courseOptions}</select></label>
+                <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px"><label>Start <input type="datetime-local" name="starts_at" required value="${esc(startDefault)}"></label><label>End <input type="datetime-local" name="ends_at" required value="${esc(endDefault)}"></label></div>
+                <label>Notes (optional)<textarea name="notes" rows="3" placeholder="What will you work on?">${esc(editing?.notes || '')}</textarea></label>
+                <div class="actions"><button class="btn" type="submit">${editing?'💾 Save Changes':'＋ Add Study Session'}</button>${editing?'<button type="button" class="btn secondary" data-planner-cancel="1">Cancel Edit</button>':''}</div>
+                <p id="plannerMessage" role="status" class="muted"></p>
+            </form>
+        </div>
+        <div class="card"><h3>📚 Sessions for ${esc(new Date(plannerSelectedDay+'T12:00:00').toLocaleDateString(undefined,{weekday:'long',month:'long',day:'numeric'}))}</h3>${chosen.map(eventCard).join('')||'<p class="muted">No sessions scheduled. Choose a time above to add one! 🪷</p>'}</div>
+        <div class="card" style="margin-top:16px"><h3>🌸 Upcoming Sessions</h3>${sorted.filter(s=>new Date(s.ends_at)>=new Date()&&!s.completed).slice(0,8).map(s=>`<p><strong>${esc(new Date(s.starts_at).toLocaleDateString())}</strong> · ${esc(plannerTime(s.starts_at))} · ${esc(s.title)}</p>`).join('')||'<p class="muted">No upcoming sessions yet.</p>'}</div>
     `);
+}
+async function plannerRefresh() {
+    const result = await sb.from('study_sessions').select('*').order('starts_at',{ascending:true});
+    if (result.error) throw result.error;
+    studySessions = result.data || [];
+    render();
+}
+async function plannerSave(form) {
+    const data = Object.fromEntries(new FormData(form));
+    const starts = new Date(data.starts_at), ends = new Date(data.ends_at);
+    if (!data.title.trim() || !Number.isFinite(starts.getTime()) || !Number.isFinite(ends.getTime()) || ends<=starts) {
+        alert('Please enter a title and an end time after the start time.'); return;
+    }
+    const payload = {title:data.title.trim(),course_id:data.course_id||null,notes:data.notes?.trim()||null,starts_at:starts.toISOString(),ends_at:ends.toISOString(),updated_at:new Date().toISOString()};
+    let result;
+    if (plannerEditingId) result=await sb.from('study_sessions').update(payload).eq('id',plannerEditingId);
+    else result=await sb.from('study_sessions').insert({...payload,user_id:session.user.id});
+    if (result.error) {alert('Could not save session: '+result.error.message);return;}
+    plannerEditingId=null; plannerSelectedDay=plannerLocalDate(starts); plannerMonth=new Date(starts.getFullYear(),starts.getMonth(),1);
+    try {await plannerRefresh();} catch(error) {alert('Saved, but refresh failed: '+error.message);}
 }
 
 /* ==========================================
@@ -2252,10 +2400,10 @@ function editCourse(id) {
     modal(
         id ? 'Edit Bayou Course' : 'Add Bayou Course',
 
-        field('title', 'Course Title', c.title) +
+        field('title', 'Class Name / Course Title (editable)', c.title) +
 
         `<div class="fields">
-            ${field('code', 'Course Code', c.code)}
+            ${field('code', 'Course Number / Code (editable)', c.code)}
             ${field('cu', 'Credit Units', c.cu ?? 3, 'number')}
         </div>` +
 
@@ -2276,10 +2424,21 @@ function editCourse(id) {
             'number'
         ) +
 
+        field('completed_at', 'Actual Completion Date (optional)', c.completed_at ? String(c.completed_at).slice(0,10) : '', 'date') +
+
         textarea('notes', 'Private Course Notes', c.notes),
 
         async values => {
+            values.title = String(values.title || '').trim();
+            values.code = String(values.code || '').trim().toUpperCase();
+            if (!values.title || !values.code) {
+                throw Error('Course name and course number are required.');
+            }
             const status = values.status;
+            const providedDate = String(values.completed_at || '').trim();
+            values.completed_at = isDone({status})
+                ? (providedDate || (isDone(c) ? (c.completed_at || null) : new Date().toISOString().slice(0,10)))
+                : null;
 
             await write('courses', {
                 ...values,
@@ -2387,25 +2546,84 @@ function addQuestion() {
    PRIVATE RESOURCE BUILDER
 ========================================== */
 
-function addResource() {
-    modal(
-        'Add Private Resource',
-
-        field('area', 'Area / Subject') +
-        field('topic', 'Topic') +
-        field('title', 'Resource Title') +
-        field('format', 'Format') +
-        field('url', 'URL', 'https://') +
-        textarea('purpose', 'Purpose'),
-
-        async values => {
-            if (!/^https:\/\//i.test(values.url)) {
-                throw Error('Use an HTTPS URL.');
+function addResource(id = null, originalVisibility = 'private') {
+    const original = id ? (originalVisibility === 'public'
+        ? publicItems.find(r => r.id === id)
+        : resources.find(r => r.id === id)) : null;
+    if (id && !original) { alert('Resource not found. Refresh and try again.'); return; }
+    const initialCode = original?.course_code || original?.area || '';
+    const initialVisibility = original ? originalVisibility : 'private';
+    const courseOptions = courses.slice().sort((a,b) => String(a.code || a.title).localeCompare(String(b.code || b.title)));
+    const resourceField = (name, label, val = '', required = false) => `
+        <div class="field"><label for="bayou-${name}">${esc(label)}</label>
+        <input id="bayou-${name}" name="${name}" value="${esc(val)}" ${required ? 'required' : ''}></div>`;
+    const body = `
+        <div class="field"><label for="bayou-visibility">Who can see this resource?</label>
+            <select id="bayou-visibility" name="visibility" style="width:100%;padding:13px;background:#09271f;color:#fff;border:1px solid #577467;border-radius:9px">
+                <option value="private" ${initialVisibility === 'private' ? 'selected' : ''}>🔒 Private — only me</option>
+                <option value="public" ${initialVisibility === 'public' ? 'selected' : ''}>🌸 Public — anyone visiting the site</option>
+            </select>
+        </div>
+        <div class="field"><label for="bayou-course-search">Class (search by code or name)</label>
+            <input id="bayou-course-search" type="search" autocomplete="off" placeholder="Search D658 or course name…" value="${esc(initialCode)}">
+            <select id="bayou-course-select" name="course_code" size="${Math.min(5, Math.max(2, courseOptions.length + 1))}" style="width:100%;margin-top:7px;padding:9px;background:#09271f;color:#fff;border:1px solid #577467;border-radius:9px">
+                <option value="">General / No class</option>
+                ${courseOptions.map(c => `<option value="${esc(c.code || '')}" ${c.code === initialCode ? 'selected' : ''}>${esc(c.code || '—')} — ${esc(c.title || '')}</option>`).join('')}
+            </select>
+            <small class="muted">Choose a result below the search box. Public resources will appear on that course's page.</small>
+        </div>
+        ${resourceField('title','Resource Title',original?.title || '',true)}
+        ${resourceField('topic','Topic',original?.topic || '',false)}
+        ${resourceField('format','Format / Type',original?.kind || original?.format || 'Link')}
+        ${resourceField('url','HTTPS URL (optional)',original?.url || '')}
+        <div class="field"><label>Purpose / Description</label><textarea name="purpose">${esc(original?.description || original?.purpose || '')}</textarea></div>
+        <div class="field"><label>Optional notes / study guide</label><textarea name="body">${esc(original?.body || '')}</textarea></div>`;
+    modal(id ? 'Edit Study Resource' : 'Add Study Resource', body, async values => {
+        const visibility = values.visibility;
+        const code = values.course_code || '';
+        const title = String(values.title || '').trim();
+        const url = String(values.url || '').trim();
+        if (!title) throw Error('Resource title is required.');
+        if (url && !/^https:\/\//i.test(url)) throw Error('Use an HTTPS URL or leave the URL blank.');
+        const privateRecord = {area:code || null,topic:values.topic || null,title,
+            format:values.format || null,url:url || null,purpose:values.purpose || null};
+        const publicRecord = {course_code:code || null,title,kind:values.format || null,
+            url:url || null,description:values.purpose || null,body:values.body || null,published:true};
+        const destination = visibility === 'public' ? 'public_resources' : 'resources';
+        const source = originalVisibility === 'public' ? 'public_resources' : 'resources';
+        const record = visibility === 'public' ? publicRecord : privateRecord;
+        if (id && destination === source) {
+            await write(destination, record, id);
+        } else {
+            // Create the destination first; never remove the original if saving fails.
+            await write(destination, record);
+            if (id) {
+                const deletion = await sb.from(source).delete().eq('id',id);
+                if (deletion.error) {
+                    throw Error('New resource saved, but original could not be removed: ' + deletion.error.message + '. Refresh before trying again.');
+                }
             }
-
-            await write('resources', values);
         }
-    );
+    });
+    const dialog = document.querySelector('dialog:last-of-type');
+    const searchBox = dialog?.querySelector('#bayou-course-search');
+    const select = dialog?.querySelector('#bayou-course-select');
+    if (searchBox && select) {
+        const opts = [...select.options];
+        searchBox.addEventListener('input', () => {
+            const q = searchBox.value.trim().toLowerCase();
+            for (const option of opts) {
+                option.hidden = !!q && !!option.value && !option.text.toLowerCase().includes(q);
+            }
+            const matching = opts.find(o => o.value && !o.hidden);
+            if (matching && q) select.value = matching.value;
+            else if (!q) select.value = '';
+        });
+        select.addEventListener('change', () => {
+            const selected = select.selectedOptions[0];
+            if (selected) searchBox.value = selected.value ? selected.text : '';
+        });
+    }
 }
 
 /* ==========================================
@@ -2881,6 +3099,24 @@ async function handle(action) {
 ========================================== */
 
 document.addEventListener('click', async event => {
+    if (!owner || !event.target.closest('[data-planner-day],[data-planner-month],[data-planner-today],[data-planner-toggle],[data-planner-edit],[data-planner-delete],[data-planner-cancel]')) return;
+    const el = event.target.closest('[data-planner-day],[data-planner-month],[data-planner-today],[data-planner-toggle],[data-planner-edit],[data-planner-delete],[data-planner-cancel]');
+    event.preventDefault(); event.stopImmediatePropagation();
+    if (el.dataset.plannerDay) {plannerSelectedDay=el.dataset.plannerDay;plannerEditingId=null;render();return;}
+    if (el.dataset.plannerMonth) {plannerMonth=new Date(plannerMonth.getFullYear(),plannerMonth.getMonth()+Number(el.dataset.plannerMonth),1);plannerEditingId=null;render();return;}
+    if (el.dataset.plannerToday) {const d=new Date();plannerSelectedDay=plannerLocalDate(d);plannerMonth=new Date(d.getFullYear(),d.getMonth(),1);plannerEditingId=null;render();return;}
+    if (el.dataset.plannerCancel) {plannerEditingId=null;render();return;}
+    if (el.dataset.plannerEdit) {plannerEditingId=el.dataset.plannerEdit;render();document.querySelector('#plannerForm')?.scrollIntoView({behavior:'smooth',block:'start'});return;}
+    const id=el.dataset.plannerToggle||el.dataset.plannerDelete;
+    const item=studySessions.find(s=>s.id===id); if (!item)return;
+    if (el.dataset.plannerDelete && !confirm(`Delete "${item.title}"? This cannot be undone.`))return;
+    const result=el.dataset.plannerDelete?await sb.from('study_sessions').delete().eq('id',id):await sb.from('study_sessions').update({completed:!item.completed,updated_at:new Date().toISOString()}).eq('id',id);
+    if (result.error) {alert('Could not update session: '+result.error.message);return;}
+    if (plannerEditingId===id)plannerEditingId=null;
+    try {await plannerRefresh();}catch(error){alert('Could not refresh planner: '+error.message);}
+}, true);
+
+document.addEventListener('click', async event => {
     const gardenFilter = event.target.closest('[data-garden-filter]');
     if (gardenFilter) {
         bayouGardenFilter = gardenFilter.dataset.gardenFilter;
@@ -2940,6 +3176,36 @@ document.addEventListener('click', async event => {
         view = 'study';
         studyTab = 'overview';
         render();
+        return;
+    }
+
+    const deleteVault = event.target.closest('[data-vault-delete]');
+    if (deleteVault && owner) {
+        const id = deleteVault.dataset.vaultDelete;
+        const visibility = deleteVault.dataset.vaultType;
+        const item = visibility === 'public'
+            ? publicItems.find(r => r.id === id)
+            : resources.find(r => r.id === id);
+        if (!item) {
+            alert('Resource not found. Refresh and try again.');
+            return;
+        }
+        if (!confirm(`Permanently delete "${item.title}"? This cannot be undone.`)) return;
+        const table = visibility === 'public' ? 'public_resources' : 'resources';
+        const result = await sb.from(table).delete().eq('id', id);
+        if (result.error) {
+            alert('Could not delete resource: ' + result.error.message);
+            return;
+        }
+        await loadPublic();
+        await loadPrivate();
+        render();
+        return;
+    }
+
+    const editVault = event.target.closest('[data-vault-edit]');
+    if (editVault && owner) {
+        addResource(editVault.dataset.vaultEdit, editVault.dataset.vaultType);
         return;
     }
 
@@ -3043,6 +3309,7 @@ document.addEventListener('change', async event => {
         const result = await sb.from('courses')
             .update({
                 status,
+                completed_at: isDone({status}) ? (isDone(c) ? (c.completed_at || null) : new Date().toISOString().slice(0,10)) : null,
                 progress: isDone({ status })
                     ? 100
                     : c.progress
@@ -3101,6 +3368,11 @@ document.addEventListener('input', event => {
 ========================================== */
 
 document.addEventListener('submit', async event => {
+    if (event.target.id === 'plannerForm') {
+        event.preventDefault();
+        if (owner && sb && session) await plannerSave(event.target);
+        return;
+    }
     if (event.target.id !== 'loginForm') return;
 
     event.preventDefault();
@@ -3159,6 +3431,24 @@ if (ready) {
         }
     });
 }
+
+/* ==========================================
+   PAGE REFRESH + BROWSER HISTORY
+========================================== */
+window.addEventListener('hashchange', () => {
+    const next = bayouInitialView();
+    if (next !== view) {
+        if (typeof bayouExamStarted !== 'undefined' && bayouExamStarted && !quizDone && next !== 'study') {
+            if (!confirm('Leave your Mock OA? Unsaved answers will be discarded.')) {
+                history.replaceState(null, '', '#' + view);
+                return;
+            }
+            bayouResetExamSession();
+        }
+        view = next;
+        render();
+    }
+});
 
 /* ==========================================
    INITIALIZE
