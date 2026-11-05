@@ -1,574 +1,1120 @@
+
+/* =========================================
+   JAI'S BAYOU COMMAND CENTER
+   Emerald • Royal Gold • Pretty Pink
+========================================= */
+
 :root {
     --bg: #081c17;
     --bg2: #0e2b22;
     --panel: #12382c;
     --panel2: #174435;
+
     --gold: #e7c987;
     --gold2: #aa8750;
     --cream: #f9f1db;
     --muted: #b5c6b8;
-    --pink: #e9b6be;
+
+    --pink: #ff9fcb;
+    --pink-light: #ffe0ed;
+    --pink-soft: #e9b6be;
+    --pink-glow: rgba(255, 159, 203, 0.18);
+
     --line: #365947;
     --good: #91d7a4;
-    --bad: #ffb6b6
+    --bad: #ffb6b6;
+
+    --lavender: #b99ad9;
+    --sage: #a9b5a7;
+    --emerald: #78d6a2;
+    --dusty-blue: #82a6be;
+
+    --radius: 17px;
+    --shadow: 0 12px 35px rgba(0, 0, 0, 0.16);
 }
 
+/* =========================================
+   RESET & BASE
+========================================= */
+
 * {
-    box-sizing: border-box
+    box-sizing: border-box;
+}
+
+html {
+    scroll-behavior: smooth;
 }
 
 body {
     margin: 0;
-    background: radial-gradient(ellipse at 90% 2%, #214737 0, transparent 38%), radial-gradient(ellipse at 2% 70%, #163b2b 0, transparent 35%), var(--bg);
+    min-height: 100vh;
+
+    background:
+        radial-gradient(
+            ellipse at 90% 2%,
+            rgba(255, 159, 203, 0.09),
+            transparent 36%
+        ),
+        radial-gradient(
+            ellipse at 5% 70%,
+            #163b2b,
+            transparent 38%
+        ),
+        var(--bg);
+
     color: var(--cream);
     font: 15px 'DM Sans', sans-serif;
-    min-height: 100vh
+    line-height: 1.55;
 }
 
 button,
 input,
 select,
 textarea {
-    font: inherit
+    font: inherit;
 }
 
 button {
-    cursor: pointer
+    cursor: pointer;
 }
 
 a {
-    color: var(--gold)
+    color: var(--pink-light);
+    text-decoration-color: rgba(255, 159, 203, 0.5);
+    text-underline-offset: 3px;
 }
 
+a:hover {
+    color: var(--pink);
+}
+
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+    outline: 2px solid var(--pink);
+    outline-offset: 3px;
+}
+
+::selection {
+    background: var(--pink);
+    color: var(--bg);
+}
+
+/* =========================================
+   HEADER & BRANDING
+========================================= */
+
 .top {
-    height: 82px;
+    min-height: 82px;
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 0 max(4%, calc((100vw - 1240px)/2));
+    gap: 18px;
+
+    padding: 12px max(4%, calc((100vw - 1240px) / 2));
+
     border-bottom: 1px solid var(--line);
-    background: #091e19dd;
+    background: rgba(9, 30, 25, 0.94);
+
     position: sticky;
     top: 0;
-    z-index: 3;
-    backdrop-filter: blur(14px)
+    z-index: 20;
+
+    backdrop-filter: blur(14px);
 }
 
 .brand {
-    text-decoration: none;
     display: flex;
-    gap: 14px;
     align-items: center;
+    gap: 14px;
+
     color: var(--cream);
-    font: 700 23px 'Playfair Display', serif
+    text-decoration: none;
+
+    font: 700 23px 'Playfair Display', serif;
+    line-height: 1.2;
+}
+
+.brand:hover {
+    color: var(--cream);
 }
 
 .brand em {
-    color: var(--gold);
-    font-style: normal
+    color: var(--pink);
+    font-style: normal;
 }
 
 .brand small {
     display: block;
-    font: 600 9px 'DM Sans';
+    margin-top: 4px;
+
+    font: 700 9px 'DM Sans', sans-serif;
     letter-spacing: 3px;
     color: var(--gold);
-    margin-top: 2px
 }
 
 .lily {
     display: grid;
     place-items: center;
-    width: 44px;
-    height: 44px;
-    border: 1px solid var(--gold2);
+
+    flex-shrink: 0;
+    width: 46px;
+    height: 46px;
+
+    border: 1px solid var(--pink);
     border-radius: 50%;
-    color: var(--gold);
-    font-size: 29px
+
+    background: rgba(255, 159, 203, 0.08);
+    color: var(--pink);
+
+    font-size: 27px;
+    box-shadow: 0 0 20px var(--pink-glow);
 }
+
+/* =========================================
+   NAVIGATION
+========================================= */
 
 nav {
     display: flex;
-    gap: 8px
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
 }
 
 nav button,
 .ghost {
-    background: transparent;
     border: 1px solid transparent;
-    color: var(--muted);
     border-radius: 10px;
-    padding: 10px 14px
+    background: transparent;
+
+    color: var(--muted);
+    padding: 10px 13px;
+
+    font-weight: 600;
+    transition: 0.2s ease;
 }
 
-nav button.active,
 nav button:hover,
+nav button.active,
 .ghost:hover {
-    color: var(--gold);
-    border-color: var(--line);
-    background: #ffffff09
+    color: var(--pink-light);
+    border-color: rgba(255, 159, 203, 0.35);
+    background: rgba(255, 159, 203, 0.09);
 }
+
+nav button.active {
+    box-shadow: inset 0 -2px 0 var(--pink);
+}
+
+/* =========================================
+   PAGE LAYOUT
+========================================= */
 
 main {
     max-width: 1240px;
-    margin: auto;
+    margin: 0 auto;
     padding: 36px 4% 85px;
-    min-height: calc(100vh - 145px)
+    min-height: calc(100vh - 145px);
 }
 
 .eyebrow {
     color: var(--gold);
     font-size: 11px;
-    letter-spacing: 3px;
+    letter-spacing: 2.5px;
     text-transform: uppercase;
-    font-weight: 700
+    font-weight: 700;
 }
+
+h1,
+h2,
+h3 {
+    overflow-wrap: break-word;
+}
+
+h2 {
+    font: 600 29px 'Playfair Display', serif;
+    margin: 5px 0;
+}
+
+.muted {
+    color: var(--muted);
+}
+
+.small {
+    font-size: 12px;
+}
+
+.right {
+    text-align: right;
+}
+
+.loading {
+    text-align: center;
+    padding: 70px 20px;
+    color: var(--pink-light);
+    font-family: 'Playfair Display', serif;
+    font-size: 22px;
+}
+
+/* =========================================
+   HERO
+========================================= */
 
 .hero {
-    padding: 70px 4%;
+    padding: 76px 5%;
     text-align: center;
-    border: 1px solid var(--line);
+
+    border: 1px solid rgba(255, 159, 203, 0.35);
     border-radius: 26px;
-    background: linear-gradient(125deg, #113f30dd, #102c24cc), radial-gradient(circle at 80% 25%, #e7c98755, transparent 30%);
+
+    background:
+        radial-gradient(
+            circle at 80% 22%,
+            rgba(255, 159, 203, 0.16),
+            transparent 33%
+        ),
+        radial-gradient(
+            circle at 15% 85%,
+            rgba(231, 201, 135, 0.12),
+            transparent 36%
+        ),
+        linear-gradient(125deg, #113f30, #102c24);
+
     position: relative;
-    overflow: hidden
+    overflow: hidden;
+    box-shadow: var(--shadow);
 }
 
-.hero:before {
-    content: '✧  ✦   ✧';
+.hero::before {
+    content: '✧  ✦  ✧';
     position: absolute;
-    top: 20px;
+    top: 15px;
     right: 35px;
-    font-size: 50px;
-    color: #e7c98722
+
+    font-size: 45px;
+    color: rgba(255, 159, 203, 0.22);
+    pointer-events: none;
 }
 
 .hero h1 {
-    font: 600 clamp(36px, 5vw, 66px) 'Playfair Display', serif;
+    font: 600 clamp(36px, 5vw, 66px)
+        'Playfair Display', serif;
+
     line-height: 1.14;
     margin: 18px auto;
-    max-width: 800px
+    max-width: 800px;
 }
 
 .hero h1 em {
-    color: var(--gold);
-    font-style: normal
+    color: var(--pink);
+    font-style: normal;
 }
 
 .hero p {
     color: var(--muted);
-    max-width: 580px;
+    max-width: 610px;
     margin: 0 auto 28px;
-    line-height: 1.8
+    line-height: 1.8;
 }
 
+.hero .btn {
+    margin: 5px;
+}
+
+/* =========================================
+   BUTTONS
+========================================= */
+
 .btn {
-    border: 1px solid var(--gold);
-    background: var(--gold);
-    color: #183323;
-    border-radius: 10px;
-    padding: 12px 19px;
-    font-weight: 700;
     display: inline-flex;
     align-items: center;
-    gap: 8px
+    justify-content: center;
+    gap: 8px;
+
+    padding: 12px 19px;
+
+    border: 1px solid var(--pink);
+    border-radius: 11px;
+
+    background: var(--pink);
+    color: #17251d;
+
+    font-weight: 700;
+    text-decoration: none;
+
+    transition:
+        transform 0.2s ease,
+        box-shadow 0.2s ease,
+        filter 0.2s ease;
 }
 
 .btn:hover {
-    filter: brightness(1.09)
+    color: #17251d;
+    filter: brightness(1.07);
+    transform: translateY(-2px);
+
+    box-shadow: 0 8px 22px var(--pink-glow);
 }
 
 .btn.secondary {
     background: transparent;
-    color: var(--gold)
+    color: var(--pink-light);
+}
+
+.btn.secondary:hover {
+    background: rgba(255, 159, 203, 0.1);
+    color: var(--pink-light);
 }
 
 .btn:disabled {
-    opacity: .5;
-    cursor: not-allowed
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
 }
+
+/* =========================================
+   SECTION HEADINGS
+========================================= */
 
 .sectionhead {
     display: flex;
     justify-content: space-between;
     align-items: end;
     gap: 15px;
-    margin: 36px 0 18px
+    margin: 36px 0 18px;
 }
 
-.sectionhead h2,
-h2 {
-    font: 600 29px 'Playfair Display', serif;
-    margin: 5px 0
+.sectionhead h2 {
+    margin: 5px 0;
 }
 
-.muted {
-    color: var(--muted)
-}
+/* =========================================
+   GRIDS & CARDS
+========================================= */
 
 .grid {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 16px
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 16px;
 }
 
 .grid.two {
-    grid-template-columns: repeat(2, 1fr)
+    grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
 .card {
-    border: 1px solid var(--line);
-    background: linear-gradient(145deg, #153b2e, #0e2922);
-    border-radius: 17px;
+    min-width: 0;
     padding: 22px;
-    min-width: 0
+
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+
+    background:
+        linear-gradient(145deg, #153b2e, #0e2922);
+
+    box-shadow: 0 3px 14px rgba(0, 0, 0, 0.07);
 }
 
 .card h3 {
     font: 600 21px 'Playfair Display', serif;
-    margin: 10px 0
+    margin: 10px 0;
 }
 
 .card p {
     color: var(--muted);
-    line-height: 1.65
+    line-height: 1.65;
 }
 
 .card .icon {
     font-size: 28px;
-    color: var(--gold)
+    color: var(--pink);
 }
 
 .pill {
-    font-size: 11px;
     display: inline-block;
-    border: 1px solid var(--line);
+    max-width: 100%;
+
+    border: 1px solid rgba(255, 159, 203, 0.35);
     border-radius: 100px;
+
     padding: 5px 10px;
-    color: var(--gold)
+
+    color: var(--pink-light);
+    background: rgba(255, 159, 203, 0.07);
+
+    font-size: 11px;
+    font-weight: 600;
 }
 
 .row {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 12px
+    flex-wrap: wrap;
+    gap: 12px;
 }
+
+/* =========================================
+   PROGRESS DASHBOARD
+========================================= */
 
 .stats {
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 14px
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 14px;
+}
+
+.stat {
+    position: relative;
+    overflow: hidden;
+}
+
+.stat::before {
+    content: '✦';
+    position: absolute;
+    top: 10px;
+    right: 14px;
+
+    font-size: 18px;
+    color: rgba(255, 159, 203, 0.2);
 }
 
 .stat strong {
-    font: 600 32px 'Playfair Display';
     display: block;
-    color: var(--gold)
+
+    font: 600 32px 'Playfair Display', serif;
+    color: var(--pink);
+    line-height: 1.3;
 }
 
 .stat small {
-    color: var(--muted)
+    color: var(--muted);
 }
 
 .bar {
-    height: 9px;
+    height: 10px;
+    margin: 12px 0;
+
     background: #071b15;
     border-radius: 50px;
     overflow: hidden;
-    margin: 12px 0
 }
 
 .bar i {
-    height: 100%;
-    background: linear-gradient(90deg, #9dca95, var(--gold));
     display: block;
-    border-radius: 50px
+    height: 100%;
+
+    background: linear-gradient(
+        90deg,
+        var(--pink),
+        var(--gold)
+    );
+
+    border-radius: 50px;
+    transition: width 0.35s ease;
 }
+
+/* =========================================
+   BAYOU STATUS LEGEND
+========================================= */
+
+.status-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 9px;
+    margin: 24px 0;
+}
+
+.legend-item {
+    display: inline-flex;
+    align-items: center;
+
+    padding: 7px 12px;
+
+    border: 1px solid var(--line);
+    border-radius: 30px;
+
+    background: rgba(255, 255, 255, 0.035);
+
+    color: var(--cream);
+    font-size: 11px;
+    font-weight: 600;
+}
+
+/* =========================================
+   PUBLIC COURSE GARDEN
+========================================= */
+
+.bayou-course-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 18px;
+    margin-top: 24px;
+}
+
+.bayou-course-tile {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 13px;
+
+    width: 100%;
+    min-width: 0;
+    min-height: 265px;
+
+    padding: 22px;
+    text-align: left;
+
+    border: 1px solid var(--tile-color, var(--pink));
+    border-radius: 20px;
+
+    color: var(--cream);
+
+    background:
+        radial-gradient(
+            circle at top right,
+            color-mix(
+                in srgb,
+                var(--tile-color, var(--pink)) 25%,
+                transparent
+            ),
+            transparent 65%
+        ),
+        linear-gradient(145deg, #153b2e, #0c281f);
+
+    box-shadow: var(--shadow);
+
+    cursor: pointer;
+
+    transition:
+        transform 0.22s ease,
+        box-shadow 0.22s ease,
+        border-color 0.22s ease;
+}
+
+.bayou-course-tile:hover {
+    transform: translateY(-5px);
+
+    box-shadow:
+        0 10px 30px rgba(255, 159, 203, 0.16),
+        0 0 20px
+            color-mix(
+                in srgb,
+                var(--tile-color, var(--pink)) 15%,
+                transparent
+            );
+}
+
+.bayou-course-tile h3 {
+    margin: 0;
+    font: 600 21px 'Playfair Display', serif;
+    line-height: 1.35;
+    color: var(--cream);
+}
+
+.bayou-course-tile .eyebrow {
+    font-size: 10px;
+    color: var(--gold);
+}
+
+.bayou-status {
+    display: inline-block;
+
+    padding: 7px 12px;
+    border-radius: 30px;
+
+    background: var(--tile-color, var(--pink));
+    color: #17251d;
+
+    font-size: 12px;
+    font-weight: 700;
+    line-height: 1.3;
+}
+
+.mission-badge {
+    display: inline-block;
+
+    padding: 7px 11px;
+
+    border: 1px solid rgba(255, 159, 203, 0.45);
+    border-radius: 9px;
+
+    background: rgba(255, 159, 203, 0.12);
+    color: var(--pink-light);
+
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.3px;
+}
+
+.tile-bottom {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+
+    width: 100%;
+    gap: 12px;
+    margin-top: auto;
+
+    color: var(--cream);
+    font-size: 13px;
+}
+
+.tile-bottom strong {
+    color: var(--tile-color, var(--pink));
+    font-size: 19px;
+}
+
+.bayou-course-tile .bar {
+    width: 100%;
+    margin: 0;
+}
+
+.bayou-course-tile .bar i {
+    background: var(--tile-color, var(--pink));
+}
+
+.tile-open {
+    color: var(--pink-light);
+    font-size: 12px;
+    font-weight: 700;
+    margin-top: 2px;
+}
+
+/* =========================================
+   PRIVATE ADMIN LAYOUT
+========================================= */
 
 .layout {
     display: grid;
     grid-template-columns: 225px minmax(0, 1fr);
-    gap: 24px
+    gap: 24px;
 }
 
 .sidebar {
     align-self: start;
     position: sticky;
-    top: 105px
+    top: 105px;
 }
 
 .sidebar button {
     display: block;
     width: 100%;
+
     text-align: left;
-    background: none;
+    background: transparent;
+
     color: var(--muted);
     border: 0;
     border-radius: 10px;
-    padding: 13px
+
+    padding: 13px;
+
+    font-weight: 600;
 }
 
 .sidebar button.active,
 .sidebar button:hover {
-    background: var(--panel2);
-    color: var(--gold)
+    background: rgba(255, 159, 203, 0.11);
+    color: var(--pink-light);
 }
 
+/* =========================================
+   TABLES
+========================================= */
+
 .tablewrap {
-    overflow: auto;
+    overflow-x: auto;
     border: 1px solid var(--line);
-    border-radius: 14px
+    border-radius: 14px;
 }
 
 table {
     border-collapse: collapse;
     width: 100%;
-    font-size: 13px
+    font-size: 13px;
 }
 
 td,
 th {
     padding: 13px 12px;
     border-bottom: 1px solid var(--line);
-    text-align: left
+    text-align: left;
+    vertical-align: middle;
 }
 
 th {
     color: var(--gold);
     font-size: 11px;
-    letter-spacing: 1px
+    letter-spacing: 1px;
 }
 
 tr:last-child td {
-    border: 0
+    border-bottom: 0;
 }
+
+tbody tr:hover {
+    background: rgba(255, 159, 203, 0.035);
+}
+
+/* =========================================
+   FORMS
+========================================= */
 
 input,
 select,
 textarea {
+    width: 100%;
+
     background: #0a241c;
     color: var(--cream);
+
     border: 1px solid var(--line);
-    padding: 11px 12px;
     border-radius: 9px;
-    width: 100%;
-    outline: 0
+
+    padding: 11px 12px;
+    outline: none;
 }
 
 input:focus,
 textarea:focus,
 select:focus {
-    border-color: var(--gold)
+    border-color: var(--pink);
 }
 
 textarea {
     min-height: 100px;
-    resize: vertical
+    resize: vertical;
 }
 
 label {
     display: block;
     color: var(--muted);
     font-size: 12px;
-    margin-bottom: 6px
+    margin-bottom: 6px;
 }
 
 .fields {
     display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 12px
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
 }
 
 .field {
-    margin: 12px 0
+    margin: 12px 0;
 }
 
 .narrow {
     max-width: 540px;
-    margin: 35px auto
+    margin: 35px auto;
 }
+
+/* =========================================
+   STUDY TABS & FLASHCARDS
+========================================= */
 
 .tabs {
     display: flex;
-    gap: 8px;
     flex-wrap: wrap;
-    margin: 18px 0
+    gap: 8px;
+    margin: 18px 0;
 }
 
 .tabs button {
     border: 1px solid var(--line);
     border-radius: 10px;
+
     background: transparent;
     color: var(--muted);
-    padding: 10px 14px
+
+    padding: 10px 14px;
 }
 
-.tabs button.active {
-    background: var(--panel2);
-    color: var(--gold)
+.tabs button.active,
+.tabs button:hover {
+    background: rgba(255, 159, 203, 0.12);
+    border-color: rgba(255, 159, 203, 0.5);
+    color: var(--pink-light);
 }
 
 .flashcard {
-    border: 1px solid var(--gold2);
-    border-radius: 18px;
-    min-height: 220px;
     display: grid;
     place-items: center;
-    text-align: center;
+
+    min-height: 220px;
     padding: 30px;
-    background: linear-gradient(145deg, #204c39, #102a21);
-    font: 500 25px 'Playfair Display';
-    cursor: pointer
+
+    border: 1px solid var(--pink);
+    border-radius: 18px;
+
+    background:
+        radial-gradient(
+            circle at top right,
+            rgba(255, 159, 203, 0.12),
+            transparent 60%
+        ),
+        linear-gradient(145deg, #204c39, #102a21);
+
+    text-align: center;
+    font: 500 25px 'Playfair Display', serif;
+
+    cursor: pointer;
 }
 
+.flashcard:hover {
+    box-shadow: 0 0 25px var(--pink-glow);
+}
+
+/* =========================================
+   QUIZ ANSWERS
+========================================= */
+
 .answer {
-    border: 1px solid var(--line);
-    padding: 12px 14px;
-    border-radius: 9px;
     display: block;
     margin: 8px 0;
-    cursor: pointer
+    padding: 12px 14px;
+
+    border: 1px solid var(--line);
+    border-radius: 9px;
+
+    cursor: pointer;
+    transition: 0.2s;
 }
 
 .answer:hover {
-    background: var(--panel2)
+    background: var(--panel2);
+    border-color: var(--pink);
 }
 
 .answer input {
     width: auto;
-    margin-right: 10px
+    margin-right: 10px;
+    accent-color: var(--pink);
 }
 
 .answer.correct {
-    border-color: var(--good)
+    border-color: var(--good);
 }
 
 .answer.wrong {
-    border-color: var(--bad)
+    border-color: var(--bad);
 }
+
+/* =========================================
+   NOTICES & EMPTY STATES
+========================================= */
 
 .notice {
     border: 1px solid var(--gold2);
-    background: #5c4b271f;
-    padding: 13px 16px;
     border-radius: 10px;
+
+    background: rgba(231, 201, 135, 0.07);
+    color: var(--gold);
+
+    padding: 13px 16px;
     margin: 15px 0;
-    color: var(--gold)
 }
 
 .empty {
     padding: 35px;
     text-align: center;
-    color: var(--muted)
-}
-
-.fireflies {
-    pointer-events: none;
-    position: fixed;
-    inset: 0;
-    background-image: radial-gradient(circle, #e8c97890 1px, transparent 2px);
-    background-size: 177px 191px;
-    opacity: .23
-}
-
-footer {
-    text-align: center;
-    border-top: 1px solid var(--line);
-    padding: 22px;
     color: var(--muted);
-    font-size: 12px
 }
 
-.small {
-    font-size: 12px
-}
-
-.right {
-    text-align: right
-}
+/* =========================================
+   ACTIONS & TEXT BUTTONS
+========================================= */
 
 .actions {
     display: flex;
+    flex-wrap: wrap;
     gap: 9px;
-    flex-wrap: wrap
 }
 
 .linkbtn {
     background: transparent;
     border: 0;
-    color: var(--gold);
-    padding: 5px
+
+    color: var(--pink-light);
+    padding: 5px;
+
+    font-weight: 600;
+}
+
+.linkbtn:hover {
+    color: var(--pink);
+    text-decoration: underline;
 }
 
 .coursebutton {
-    background: none;
+    background: transparent;
     border: 0;
+
     text-align: left;
     color: var(--cream);
+
     cursor: pointer;
-    font-weight: 700
+    font-weight: 700;
 }
 
 .coursebutton:hover {
-    color: var(--gold)
+    color: var(--pink);
 }
 
-@media(max-width:850px) {
+/* =========================================
+   FIREFLIES & FOOTER
+========================================= */
 
+.fireflies {
+    pointer-events: none;
+    position: fixed;
+    inset: 0;
+
+    background-image:
+        radial-gradient(
+            circle,
+            rgba(231, 201, 135, 0.7) 1px,
+            transparent 2px
+        );
+
+    background-size: 177px 191px;
+    opacity: 0.22;
+}
+
+footer {
+    text-align: center;
+    border-top: 1px solid var(--line);
+
+    padding: 22px;
+    color: var(--muted);
+    font-size: 12px;
+}
+
+/* =========================================
+   RESPONSIVE: TABLET
+========================================= */
+
+@media (max-width: 900px) {
+    .bayou-course-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 850px) {
     .grid,
     .grid.two,
     .stats {
-        grid-template-columns: repeat(2, 1fr)
+        grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 
     .layout {
-        grid-template-columns: 1fr
+        grid-template-columns: 1fr;
     }
 
     .sidebar {
         position: static;
         display: flex;
-        overflow: auto
+        overflow-x: auto;
+        gap: 5px;
     }
 
     .sidebar button {
-        white-space: nowrap
+        white-space: nowrap;
+        width: auto;
+        flex-shrink: 0;
     }
 
     .top {
-        height: auto;
         min-height: 80px;
         padding: 12px 4%;
         flex-wrap: wrap;
-        gap: 12px
     }
 }
 
-@media(max-width:540px) {
+/* =========================================
+   RESPONSIVE: MOBILE
+========================================= */
 
-    .grid,
-    .grid.two,
-    .stats,
-    .fields {
-        grid-template-columns: 1fr
+@media (max-width: 600px) {
+    .bayou-course-grid {
+        grid-template-columns: 1fr;
     }
 
     .hero {
-        padding: 45px 16px
+        padding: 48px 16px;
+    }
+
+    .hero h1 {
+        font-size: 36px;
+    }
+
+    .top {
+        gap: 12px;
     }
 
     nav {
         width: 100%;
-        justify-content: space-between
+        justify-content: center;
+        gap: 5px;
     }
 
     nav button {
-        font-size: 12px;
-        padding: 8px
+        font-size: 11px;
+        padding: 8px 9px;
     }
 
     .brand {
-        font-size: 19px
+        font-size: 19px;
+    }
+
+    main {
+        padding-top: 24px;
+    }
+}
+
+@media (max-width: 540px) {
+    .grid,
+    .grid.two,
+    .stats,
+    .fields {
+        grid-template-columns: 1fr;
+    }
+
+    .stat strong {
+        font-size: 29px;
+    }
+
+    .sectionhead {
+        align-items: flex-start;
+    }
+
+    .card {
+        padding: 18px;
+    }
+
+    .bayou-course-tile {
+        min-height: 245px;
+    }
+
+    h2 {
+        font-size: 25px;
+    }
+}
+
+/* =========================================
+   REDUCED MOTION ACCESSIBILITY
+========================================= */
+
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        scroll-behavior: auto !important;
+        transition-duration: 0.01ms !important;
+        animation-duration: 0.01ms !important;
     }
 }
