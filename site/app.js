@@ -918,6 +918,76 @@ function coursePage() {
             Changes update your public Course Garden.
         </p>
 
+        
+        <div class="card" style="margin:22px 0;border-color:var(--pink)">
+            <div class="row">
+                <div>
+                    <div class="eyebrow">Your Official Progress Guide</div>
+                    <h3>🪷 Bayou Status Key</h3>
+                </div>
+                <span class="pill">6 Course Statuses</span>
+            </div>
+
+            <div class="bayou-status-key">
+
+                <div class="bayou-key-item" style="--key-color:#B99AD9">
+                    <span class="bayou-key-icon">🌱</span>
+                    <div>
+                        <strong>Seeds Awaiting</strong>
+                        <p>Courses awaiting evaluation or confirmation.</p>
+                        <small>Maps to: Needs Evaluation</small>
+                    </div>
+                </div>
+
+                <div class="bayou-key-item" style="--key-color:#A9B5A7">
+                    <span class="bayou-key-icon">🪷</span>
+                    <div>
+                        <strong>Lily Pad Locked</strong>
+                        <p>Courses waiting for their turn in your journey.</p>
+                        <small>Maps to: Not Started</small>
+                    </div>
+                </div>
+
+                <div class="bayou-key-item" style="--key-color:#FF9FCB">
+                    <span class="bayou-key-icon">✨</span>
+                    <div>
+                        <strong>Bayou in Bloom</strong>
+                        <p>The course you're actively working on.</p>
+                        <small>Maps to: In Progress</small>
+                    </div>
+                </div>
+
+                <div class="bayou-key-item" style="--key-color:#78D6A2">
+                    <span class="bayou-key-icon">👑</span>
+                    <div>
+                        <strong>Royal Bloom</strong>
+                        <p>Courses you've successfully completed.</p>
+                        <small>Maps to: Passed</small>
+                    </div>
+                </div>
+
+                <div class="bayou-key-item" style="--key-color:#E7C987">
+                    <span class="bayou-key-icon">🗝️</span>
+                    <div>
+                        <strong>Golden Passage</strong>
+                        <p>Credits you've already earned through transfer.</p>
+                        <small>Maps to: Transferred</small>
+                    </div>
+                </div>
+
+                <div class="bayou-key-item" style="--key-color:#82A6BE">
+                    <span class="bayou-key-icon">🌙</span>
+                    <div>
+                        <strong>Moonlit Pause</strong>
+                        <p>Courses temporarily paused.</p>
+                        <small>Maps to: On Hold</small>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+
         <div class="row" style="margin:16px 0">
             <input id="courseSearch"
                 placeholder="Search courses or codes…"

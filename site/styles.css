@@ -1118,3 +1118,70 @@ footer {
         animation-duration: 0.01ms !important;
     }
 }
+
+
+/* =========================================
+   OFFICIAL BAYOU STATUS KEY
+========================================= */
+
+.bayou-status-key {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+    margin-top: 18px;
+}
+
+.bayou-key-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+
+    padding: 16px;
+    border: 1px solid var(--key-color);
+    border-radius: 14px;
+
+    background: linear-gradient(
+        135deg,
+        rgba(255, 255, 255, 0.045),
+        rgba(0, 0, 0, 0.08)
+    );
+}
+
+.bayou-key-icon {
+    display: grid;
+    place-items: center;
+    flex-shrink: 0;
+
+    width: 42px;
+    height: 42px;
+    border-radius: 12px;
+
+    background: rgba(255, 255, 255, 0.08);
+    font-size: 24px;
+}
+
+.bayou-key-item strong {
+    display: block;
+    color: var(--key-color);
+    font-size: 14px;
+    margin-bottom: 5px;
+}
+
+.bayou-key-item p {
+    margin: 0 0 7px;
+    color: var(--muted);
+    font-size: 12px;
+    line-height: 1.5;
+}
+
+.bayou-key-item small {
+    color: var(--cream);
+    font-size: 11px;
+    opacity: 0.8;
+}
+
+@media (max-width: 650px) {
+    .bayou-status-key {
+        grid-template-columns: 1fr;
+    }
+}
