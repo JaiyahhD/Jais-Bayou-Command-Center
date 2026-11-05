@@ -37,6 +37,18 @@ let quizIndex = 0;
 let quizAnswers = {};
 let quizDone = false;
 let search = '';
+let bayouGardenFilter = 'All';
+let bayouResourceFilter = 'All';
+// D658 pre-assessment is fetched from the owner-only Supabase question bank.
+let d658ReviewIndex = 0;
+let d658ReviewAnswers = {};
+let d658ReviewDone = false;
+let d658ReviewSaving = false;
+const isD658PreAssessment = q => String(q.topic || '').startsWith('D658 Pre-Assessment |');
+const d658ReviewQuestions = courseId => questions
+    .filter(q => q.course_id === courseId && isD658PreAssessment(q))
+    .sort((a,b) => Number((a.topic || '').match(/Q(\d+)/)?.[1] || 0) - Number((b.topic || '').match(/Q(\d+)/)?.[1] || 0));
+
 
 /* ==========================================
    HELPERS
@@ -441,6 +453,7 @@ function home() {
 
 function courseGarden() {
     const stats = progressStats(publicCourses);
+    const visibleCourses = bayouGardenFilter === 'All' ? publicCourses : publicCourses.filter(c => c.status === bayouGardenFilter);
 
     app.innerHTML = `
         <div class="eyebrow">
@@ -485,24 +498,24 @@ function courseGarden() {
             </div>
         </div>
 
-        <div class="status-legend">
+        <div class="status-legend" aria-label="Filter courses by status">
+            <button class="legend-item" data-garden-filter="All" aria-pressed="${bayouGardenFilter === 'All'}" style="border-color:${bayouGardenFilter === 'All' ? '#FF9FCB' : 'var(--line)'}">✨ All Courses</button>
             ${statusOptions.map(status => {
                 const b = getBayouStatus(status);
 
                 return `
-                    <span class="legend-item"
-                        style="border-color:${b.color}">
+                    <button class="legend-item" data-garden-filter="${esc(status)}" aria-pressed="${bayouGardenFilter === status}" style="border-color:${b.color};${bayouGardenFilter === status ? 'box-shadow:0 0 0 2px '+b.color+';font-weight:800;' : ''}cursor:pointer">
                         ${esc(b.name)}
-                    </span>
+                    </button>
                 `;
             }).join('')}
         </div>
 
         <div class="bayou-course-grid">
-            ${publicCourses.map(courseTile).join('') || `
+            ${visibleCourses.map(courseTile).join('') || `
                 <div class="card empty">
                     🌱 My course garden is waiting to bloom!
-                    Courses will appear after database setup.
+                    No courses match this filter. Try All Courses.
                 </div>
             `}
         </div>
@@ -600,6 +613,24 @@ function resourceCards(items) {
     `;
 }
 
+
+/* Public D658 memory tricks — created from Jai's supplied memory tool. */
+const bayouD658Mnemonics = [["🎯", "Learning Objectives", "C-B-C", "Condition • Behavior • Criterion"], ["🧠", "Bloom’s Taxonomy", "R-U-A-A-E-C", "Remember • Understand • Apply • Analyze • Evaluate • Create"], ["🔁", "Behaviorism", "A-R-R", "Action • Reinforcement • Repeat"], ["🧩", "Constructivism", "B-B-B", "Build knowledge based on experiences by exploring"], ["👀", "Social Learning", "W-M-L", "Watch • Model • Learn"], ["🪜", "Scaffolding", "I DO → WE DO → YOU DO", "Gradually remove teacher support"], ["📖", "Direct vs. Indirect", "TELL & SHOW / GUIDE & DISCOVER", "Teacher-led vs. student exploration"], ["📝", "Formative vs. Summative", "CHECK ALONG / CHECK AT END", "Monitor learning vs. evaluate mastery"], ["📊", "Assessment Data", "C-A-A", "Collect • Analyze • Adjust"], ["🌸", "Differentiation", "C-P-P-E", "Content • Process • Product • Environment"], ["🔑", "Accommodations vs. Modifications", "HOW VS. WHAT", "Change access vs. change expectations"], ["🌱", "Zone of Proximal Development", "CAN DO + HELP = CAN GROW", "Support tasks just beyond independent ability"]];
+function bayouPublicMemoryTricks() {
+    return `<section class="card" style="margin:22px 0;background:#1C1519;color:#FFF6F9;border:2px solid #F5A4C9">
+        <div class="eyebrow" style="color:#F5A4C9">D658 · OA Study Strategies</div>
+        <h2 style="color:#FFFFFF">💗 D658 Memory Tricks</h2>
+        <p style="color:#F0D9DD">Pink, brown & black study mnemonics · connect each memory trick to a classroom scenario.</p>
+        <div class="grid two" style="margin-top:16px">
+        ${bayouD658Mnemonics.map(([icon,topic,trick,meaning]) => `<article style="padding:16px;border:1px solid #8C5A69;border-radius:14px;background:#332329">
+            <div style="color:#F5A4C9;font-weight:700">${icon} ${esc(topic)}</div>
+            <h3 style="color:#FFFFFF;margin:8px 0">${esc(trick)}</h3>
+            <p style="color:#EEDCE0;margin:0">${esc(meaning)}</p>
+        </article>`).join('')}
+        </div><p style="color:#EEDCE0;font-size:.9em">Personal study aids; not official WGU materials.</p>
+    </section>`;
+}
+
 function publicCourseDetail() {
     const course = publicCourses.find(c =>
         (c.code || c.title) === selectedPublicCourse
@@ -659,6 +690,7 @@ function publicCourseDetail() {
             <h2>📚 Course Study Resources</h2>
         </div>
 
+        ${String(course.code || '').toUpperCase() === 'D658' ? bayouPublicMemoryTricks() : ''}
         ${resourceCards(matching)}
 
         <p class="small muted" style="margin-top:20px">
@@ -669,6 +701,8 @@ function publicCourseDetail() {
 }
 
 function publicPage() {
+    const kinds = [...new Set(publicItems.map(r => String(r.kind || 'Study Resource').trim()).filter(Boolean))].sort();
+    const shown = bayouResourceFilter === 'All' ? publicItems : publicItems.filter(r => String(r.kind || 'Study Resource').trim() === bayouResourceFilter);
     app.innerHTML = `
         <div class="eyebrow">
             ✨ Jai Davis · Open Study Collection
@@ -687,7 +721,12 @@ function publicPage() {
             </div>
         ` : ''}
 
-        ${resourceCards(publicItems)}
+        <div class="status-legend" aria-label="Filter resources by type" style="margin:16px 0">
+            <button class="legend-item" data-resource-filter="All" aria-pressed="${bayouResourceFilter === 'All'}">✨ All Resources</button>
+            ${kinds.map(k => `<button class="legend-item" data-resource-filter="${esc(k)}" aria-pressed="${bayouResourceFilter === k}">${esc(k)}</button>`).join('')}
+        </div>
+        ${bayouPublicMemoryTricks()}
+        ${resourceCards(shown)}
     `;
 }
 
@@ -1335,7 +1374,7 @@ function studyPage() {
 
     const cc = cards.filter(x => x.course_id === c.id);
         const qq = bayouActiveQuestions(
-        questions.filter(x => x.course_id === c.id)
+        questions.filter(x => x.course_id === c.id && !isD658PreAssessment(x))
     );
     const aa = attempts.filter(x => x.course_id === c.id);
     const competencyStats = bayouCompetencyStats(
@@ -1372,6 +1411,7 @@ function studyPage() {
         ['overview', 'Overview'],
         ['flashcards', `Flashcards (${cc.length})`],
         ['quiz', `Practice Quiz (${qq.length})`],
+        ...(c.code === 'D658' ? [['preassessment', `🔐 Pre-Assessment (${d658ReviewQuestions(c.id).length})`]] : []),
         ['mastery', '📊 Competencies'],
         ['rewards', '🏆 Achievements'],
         ['history', 'Attempt History']
@@ -1595,7 +1635,7 @@ function studyPage() {
     if (studyTab === 'quiz') {
         const isMock = bayouExamStarted;
         const isFinished = quizDone;
-        const allAvailable = questions.filter(x => x.course_id === c.id).length;
+        const allAvailable = questions.filter(x => x.course_id === c.id && !isD658PreAssessment(x)).length;
         if (isMock && !isFinished) {
             body += `
                 <div class="card" style="margin-bottom:16px;border:2px solid #E7C987;text-align:center">
@@ -1675,6 +1715,44 @@ function studyPage() {
                         </label>`).join('')}
                     <div style="margin-top:20px">${button(quizIndex === qq.length - 1 ? (isMock ? '👑 Submit Mock OA' : 'Submit Practice') : 'Next Question →', 'quizNext')}</div>
                 </div>`;
+        }
+    }
+
+    if (studyTab === 'preassessment' && c.code === 'D658') {
+        const review = d658ReviewQuestions(c.id);
+        const answered = review.filter(q => d658ReviewAnswers[q.id] !== undefined).length;
+        const score = review.filter(q => d658ReviewAnswers[q.id] === Number(q.correct_index)).length;
+        const history = aa.filter(a => a.answers && review.some(q => Object.prototype.hasOwnProperty.call(a.answers, q.id)));
+        body += `<div class="card" style="margin:18px 0;border:2px solid #FF9FCB;background:linear-gradient(145deg,#24171e,#38252b);color:#fff">
+            <div class="eyebrow" style="color:#FF9FCB">🔐 Owner-Only · D658</div>
+            <h3 style="color:#fff">🧠 My Original Pre-Assessment Review</h3>
+            <p style="color:#f6dce9">45 imported questions, organized by competency. Your answers and scores stay in your private Study Studio.</p>
+            <div class="row"><span class="pill">${review.length} questions</span><span class="pill">${answered} answered</span><span class="pill">${history.length} saved review attempts</span></div>
+        </div>`;
+        if (!review.length) {
+            body += '<div class="card empty">No D658 pre-assessment questions are available to this account. Check the private quiz_questions access policies.</div>';
+        } else if (d658ReviewDone) {
+            body += `<div class="card" style="border:2px solid #FF9FCB;text-align:center"><h3>💗 Review Complete!</h3><h2>${pct(score, review.length)}%</h2><p>${score} of ${review.length} correct</p>
+                <p class="muted">Saved as a practice attempt, not an official WGU assessment result.</p>
+                ${button('🌸 Start Another Review', 'restartD658Review')}</div>`;
+            for (const category of ['Instructional Practices', 'Assessment', 'Differentiated Instruction']) {
+                const subset = review.filter(q => q.topic.includes(`| ${category} |`));
+                const correct = subset.filter(q => d658ReviewAnswers[q.id] === Number(q.correct_index)).length;
+                body += `<div class="card" style="margin:12px 0"><strong>${esc(category)} · ${correct}/${subset.length}</strong>
+                    <div class="muted small">${pct(correct, subset.length)}% correct in this review</div></div>`;
+            }
+            body += review.map((q,i) => `<details class="card" style="margin:10px 0"><summary>Q${i+1} · ${d658ReviewAnswers[q.id] === Number(q.correct_index) ? '✓ Correct' : '✕ Review'}</summary>
+                <p><strong>${esc(q.prompt)}</strong></p><p>Your answer: ${d658ReviewAnswers[q.id] === undefined ? 'Unanswered' : esc(q.options[d658ReviewAnswers[q.id]] || '')}</p>
+                <p>Correct answer: ${esc(q.options[Number(q.correct_index)] || '')}</p><p class="muted">${esc(q.explanation || '')}</p></details>`).join('');
+        } else {
+            const q = review[Math.min(d658ReviewIndex, review.length-1)];
+            body += `<div class="card" style="margin:14px 0"><div class="row"><span class="pill">Question ${d658ReviewIndex+1} / ${review.length}</span><span class="pill">${answered} answered</span></div>
+                <p class="muted small">${esc(q.topic.replace(/^D658 Pre-Assessment \| /,'').replace(/ \| Q\d+$/,''))}</p>
+                <h3>${esc(q.prompt)}</h3>${(q.options || []).map((choice,i) => `<label class="answer"><input type="radio" name="d658ReviewAnswer" value="${i}" ${d658ReviewAnswers[q.id] === i ? 'checked' : ''}> ${String.fromCharCode(65+i)}. ${esc(choice)}</label>`).join('')}
+                <div class="row" style="margin-top:18px">${d658ReviewIndex ? button('← Previous', 'd658ReviewPrev', 'btn secondary') : ''}
+                ${button(d658ReviewIndex === review.length-1 ? (d658ReviewSaving ? 'Saving…' : '💗 Submit My Review') : 'Next Question →', 'd658ReviewNext')}
+                ${button(d658ReviewSaving ? 'Saving…' : '💗 Submit Early', 'd658ReviewSubmitEarly', 'btn secondary')}</div>
+                <p class="muted small">Submit Early saves your current answers. Unanswered questions count as incorrect, and all 45 answers are revealed afterward.</p></div>`;
         }
     }
 
@@ -2443,7 +2521,7 @@ async function bayouSubmitMockOA() {
     if (!c) return;
 
     const qq = bayouActiveQuestions(
-        questions.filter(q => q.course_id === c.id)
+        questions.filter(q => q.course_id === c.id && !isD658PreAssessment(q))
     );
 
     if (!qq.length) return;
@@ -2484,7 +2562,7 @@ async function bayouSubmitMockOA() {
 async function quizNext() {
         const c = active();
     const qq = bayouActiveQuestions(
-        questions.filter(x => x.course_id === c.id)
+        questions.filter(x => x.course_id === c.id && !isD658PreAssessment(x))
     );
     if (!qq.length || quizDone) return;
     if (bayouExamStarted && bayouExamTimed && bayouExamTimeRemaining() <= 0) {
@@ -2537,11 +2615,76 @@ async function quizNext() {
     render();
 }
 
+async function bayouSaveD658Review(course, review) {
+    if (!owner || d658ReviewSaving || !review.length) return;
+    const score = review.filter(q => d658ReviewAnswers[q.id] === Number(q.correct_index)).length;
+    d658ReviewSaving = true;
+    render();
+    try {
+        const result = await sb.from('quiz_attempts').insert({
+            course_id: course.id,
+            score,
+            total: review.length,
+            answers: {...d658ReviewAnswers}
+        });
+        if (result.error) {
+            alert('Could not save your review: ' + result.error.message);
+            return;
+        }
+        d658ReviewDone = true;
+        await loadPrivate();
+    } catch (error) {
+        alert('Could not save your review: ' + (error?.message || String(error)));
+    } finally {
+        d658ReviewSaving = false;
+        render();
+    }
+}
+
 /* ==========================================
    ACTION HANDLER
 ========================================== */
 
 async function handle(action) {
+    if (action === 'restartD658Review') {
+        d658ReviewIndex = 0; d658ReviewAnswers = {}; d658ReviewDone = false;
+        render(); return;
+    }
+    if (action === 'd658ReviewPrev') {
+        d658ReviewIndex = Math.max(0, d658ReviewIndex - 1);
+        render(); return;
+    }
+    if (action === 'd658ReviewSubmitEarly') {
+        if (!owner || d658ReviewSaving || d658ReviewDone) return;
+        const c = active();
+        if (!c || c.code !== 'D658') return;
+        const review = d658ReviewQuestions(c.id);
+        if (!review.length) return;
+        const selected = document.querySelector('input[name="d658ReviewAnswer"]:checked');
+        const current = review[d658ReviewIndex];
+        if (selected && current) d658ReviewAnswers[current.id] = Number(selected.value);
+        const answered = review.filter(q => d658ReviewAnswers[q.id] !== undefined).length;
+        if (!confirm(`Submit this review now? ${answered} of ${review.length} answered; ${review.length - answered} unanswered will count as incorrect.`)) return;
+        return bayouSaveD658Review(c, review);
+    }
+    if (action === 'd658ReviewNext') {
+        if (!owner || d658ReviewSaving) return;
+        const c = active();
+        if (!c || c.code !== 'D658') return;
+        const review = d658ReviewQuestions(c.id);
+        const q = review[d658ReviewIndex];
+        if (!q) return;
+        const selected = document.querySelector('input[name="d658ReviewAnswer"]:checked');
+        if (!selected && d658ReviewAnswers[q.id] === undefined) {
+            alert('Choose an answer first.'); return;
+        }
+        if (selected) d658ReviewAnswers[q.id] = Number(selected.value);
+        if (d658ReviewIndex < review.length - 1) {
+            d658ReviewIndex++; render(); return;
+        }
+        return bayouSaveD658Review(c, review);
+    }
+
     const pages = [
         'home',
         'catalog',
@@ -2651,7 +2794,7 @@ async function handle(action) {
         if (!c) return;
 
         const available = questions.filter(
-            q => q.course_id === c.id
+            q => q.course_id === c.id && !isD658PreAssessment(q)
         );
 
         if (!available.length) {
@@ -2738,6 +2881,19 @@ async function handle(action) {
 ========================================== */
 
 document.addEventListener('click', async event => {
+    const gardenFilter = event.target.closest('[data-garden-filter]');
+    if (gardenFilter) {
+        bayouGardenFilter = gardenFilter.dataset.gardenFilter;
+        render();
+        return;
+    }
+    const resourceFilter = event.target.closest('[data-resource-filter]');
+    if (resourceFilter) {
+        bayouResourceFilter = resourceFilter.dataset.resourceFilter;
+        render();
+        return;
+    }
+
     const action = event.target.closest('[data-action]');
 
     if (action) {
@@ -2780,6 +2936,7 @@ document.addEventListener('click', async event => {
         bayouResetExamSession();
         bayouExamType = 'practice';
         activeCourse = course.dataset.course;
+        d658ReviewIndex = 0; d658ReviewAnswers = {}; d658ReviewDone = false;
         view = 'study';
         studyTab = 'overview';
         render();
@@ -2835,10 +2992,17 @@ document.addEventListener('click', async event => {
 ========================================== */
 
 document.addEventListener('change', async event => {
+    if (event.target.matches('input[name="d658ReviewAnswer"]') && owner && !d658ReviewDone) {
+        const c = active();
+        const q = c && d658ReviewQuestions(c.id)[d658ReviewIndex];
+        if (q) d658ReviewAnswers[q.id] = Number(event.target.value);
+        return;
+    }
+
     if (event.target.matches('input[name="quizAnswer"]') && owner && !quizDone) {
         const c = active();
         if (c) {
-            const current = bayouActiveQuestions(questions.filter(q => q.course_id === c.id))[quizIndex];
+            const current = bayouActiveQuestions(questions.filter(q => q.course_id === c.id && !isD658PreAssessment(q)))[quizIndex];
             if (current) quizAnswers[current.id] = Number(event.target.value);
         }
         return;
