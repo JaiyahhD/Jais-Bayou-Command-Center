@@ -38,7 +38,15 @@ let plannerSelectedDay = `${new Date().getFullYear()}-${String(new Date().getMon
 let plannerEditingId = null;
 
 let activeCourse = null;
-let selectedPublicCourse = null;
+// Read course identity from the URL so public links work in new tabs and incognito.
+function bayouCourseFromHash() {
+    const hash = location.hash.slice(1);
+    if (hash.split('?')[0] !== 'publicCourse') return null;
+    const params = new URLSearchParams(hash.split('?').slice(1).join('?'));
+    // Backward compatibility for the already-shared assignment link #publicCourse.
+    return params.get('course') || 'D658';
+}
+let selectedPublicCourse = bayouCourseFromHash();
 let studyTab = 'overview';
 let flashIndex = 0;
 let flipped = false;
@@ -312,8 +320,11 @@ function nav() {
 function render() {
     // Keep the address bar in sync so refresh restores the current page.
     // replaceState avoids a duplicate browser-history entry on every render.
-    if (bayouPages.has(view) && location.hash !== '#' + view) {
-        history.replaceState(null, '', '#' + view);
+    const desiredHash = view === 'publicCourse'
+        ? '#publicCourse?course=' + encodeURIComponent(selectedPublicCourse || 'D658')
+        : '#' + view;
+    if (bayouPages.has(view) && location.hash !== desiredHash) {
+        history.replaceState(null, '', desiredHash);
     }
     nav();
 
@@ -649,8 +660,11 @@ function bayouPublicMemoryTricks() {
 }
 
 function publicCourseDetail() {
+    // The hash, not a previous in-memory click, identifies the requested course.
+    selectedPublicCourse = bayouCourseFromHash() || selectedPublicCourse || 'D658';
     const course = publicCourses.find(c =>
-        (c.code || c.title) === selectedPublicCourse
+        String(c.code || c.title || '').trim().toLowerCase() ===
+        String(selectedPublicCourse).trim().toLowerCase()
     );
 
     if (!course) {
@@ -3160,6 +3174,7 @@ document.addEventListener('click', async event => {
             publicTile.dataset.publicCourse;
 
         view = 'publicCourse';
+        history.pushState(null, '', '#publicCourse?course=' + encodeURIComponent(selectedPublicCourse));
         render();
         return;
     }
@@ -3436,7 +3451,8 @@ if (ready) {
 ========================================== */
 window.addEventListener('hashchange', () => {
     const next = bayouInitialView();
-    if (next !== view) {
+    const nextCourse = next === 'publicCourse' ? bayouCourseFromHash() : null;
+    if (next !== view || (next === 'publicCourse' && nextCourse !== selectedPublicCourse)) {
         if (typeof bayouExamStarted !== 'undefined' && bayouExamStarted && !quizDone && next !== 'study') {
             if (!confirm('Leave your Mock OA? Unsaved answers will be discarded.')) {
                 history.replaceState(null, '', '#' + view);
@@ -3445,6 +3461,7 @@ window.addEventListener('hashchange', () => {
             bayouResetExamSession();
         }
         view = next;
+        if (next === 'publicCourse') selectedPublicCourse = nextCourse;
         render();
     }
 });
