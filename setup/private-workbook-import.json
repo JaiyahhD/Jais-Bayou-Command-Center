@@ -1,0 +1,413 @@
+{
+  "courses": [
+    {
+      "title": "The Professional Educator",
+      "code": "D663",
+      "cu": 3,
+      "domain": "Professional Core",
+      "status": "Passed",
+      "progress": 100,
+      "notes": "Completed at WGU; pending new-program mapping"
+    },
+    {
+      "title": "Composition: Writing with a Strategy",
+      "code": "D269",
+      "cu": 3,
+      "domain": "General Education",
+      "status": "Passed",
+      "progress": 100,
+      "notes": "Met in old secondary-biology transfer evaluation; NEW evaluation must confirm"
+    },
+    {
+      "title": "Introduction to Communication: Connecting with Others",
+      "code": "D268",
+      "cu": 3,
+      "domain": "General Education",
+      "status": "Passed",
+      "progress": 0,
+      "notes": "Met in old secondary-biology transfer evaluation; NEW evaluation must confirm"
+    },
+    {
+      "title": "Learners and Learning Science",
+      "code": "",
+      "cu": 3,
+      "domain": "Professional Core",
+      "status": "Needs Evaluation",
+      "progress": 0,
+      "notes": "Listed in official BAESELED guide; transfer/requirements pending"
+    },
+    {
+      "title": "Composition: Successful Self-Expression",
+      "code": "D270",
+      "cu": 3,
+      "domain": "General Education",
+      "status": "Passed",
+      "progress": 0,
+      "notes": "Met in old secondary-biology transfer evaluation; NEW evaluation must confirm"
+    },
+    {
+      "title": "Integrated Physical Sciences",
+      "code": "",
+      "cu": 3,
+      "domain": "General Education",
+      "status": "Needs Evaluation",
+      "progress": 0,
+      "notes": "Listed in official BAESELED guide; transfer/requirements pending"
+    },
+    {
+      "title": "Introduction to Systems Thinking and Applications",
+      "code": "D459",
+      "cu": 3,
+      "domain": "General Education",
+      "status": "Passed",
+      "progress": 0,
+      "notes": "Met in old secondary-biology transfer evaluation; NEW evaluation must confirm"
+    },
+    {
+      "title": "Personalized Learning for Inclusive Classrooms",
+      "code": "",
+      "cu": 3,
+      "domain": "Professional Core",
+      "status": "Needs Evaluation",
+      "progress": 0,
+      "notes": "Listed in official BAESELED guide; transfer/requirements pending"
+    },
+    {
+      "title": "Creating Positive Learning Environments",
+      "code": "D661",
+      "cu": 3,
+      "domain": "Professional Core",
+      "status": "Passed",
+      "progress": 100,
+      "notes": "Completed at WGU; pending new-program mapping"
+    },
+    {
+      "title": "Quantitative Literacy",
+      "code": "D771",
+      "cu": 3,
+      "domain": "General Education",
+      "status": "Passed",
+      "progress": 0,
+      "notes": "Met in old secondary-biology transfer evaluation; NEW evaluation must confirm"
+    },
+    {
+      "title": "Technology and Ethics: Emerging Trends and Society",
+      "code": "D773",
+      "cu": 3,
+      "domain": "General Education",
+      "status": "Passed",
+      "progress": 0,
+      "notes": "Met in old secondary-biology transfer evaluation; NEW evaluation must confirm"
+    },
+    {
+      "title": "Planning Instructional Strategies for Meaningful Learning",
+      "code": "D658",
+      "cu": 3,
+      "domain": "Professional Core",
+      "status": "In Progress",
+      "progress": 0,
+      "notes": "Listed in official BAESELED guide; transfer/requirements pending"
+    },
+    {
+      "title": "Assessing and Monitoring Student Learning",
+      "code": "",
+      "cu": 3,
+      "domain": "Professional Core",
+      "status": "Needs Evaluation",
+      "progress": 0,
+      "notes": "Listed in official BAESELED guide; transfer/requirements pending"
+    },
+    {
+      "title": "Introduction to Biology",
+      "code": "",
+      "cu": 3,
+      "domain": "General Education",
+      "status": "Passed",
+      "progress": 0,
+      "notes": "Listed in official BAESELED guide; transfer/requirements pending"
+    },
+    {
+      "title": "Statistical Data Literacy",
+      "code": "",
+      "cu": 3,
+      "domain": "General Education",
+      "status": "Needs Evaluation",
+      "progress": 0,
+      "notes": "Listed in official BAESELED guide; transfer/requirements pending"
+    },
+    {
+      "title": "Instructional Technology and Online Pedagogy",
+      "code": "D660",
+      "cu": 3,
+      "domain": "Professional Core",
+      "status": "Passed",
+      "progress": 100,
+      "notes": "Completed at WGU; pending new-program mapping"
+    },
+    {
+      "title": "American Politics and the US Constitution",
+      "code": "C963",
+      "cu": 3,
+      "domain": "General Education",
+      "status": "Passed",
+      "progress": 0,
+      "notes": "Met in old secondary-biology transfer evaluation; NEW evaluation must confirm"
+    },
+    {
+      "title": "Elementary Literacy Curriculum",
+      "code": "",
+      "cu": 3,
+      "domain": "Literacy",
+      "status": "Needs Evaluation",
+      "progress": 0,
+      "notes": "Listed in official BAESELED guide; transfer/requirements pending"
+    },
+    {
+      "title": "Early Literacy Methods",
+      "code": "",
+      "cu": 3,
+      "domain": "Literacy",
+      "status": "Needs Evaluation",
+      "progress": 0,
+      "notes": "Listed in official BAESELED guide; transfer/requirements pending"
+    },
+    {
+      "title": "Elementary Literacy Methods",
+      "code": "",
+      "cu": 3,
+      "domain": "Literacy",
+      "status": "Needs Evaluation",
+      "progress": 0,
+      "notes": "Listed in official BAESELED guide; transfer/requirements pending"
+    },
+    {
+      "title": "Foundations of Literacy Through Literature",
+      "code": "",
+      "cu": 3,
+      "domain": "Literacy",
+      "status": "Needs Evaluation",
+      "progress": 0,
+      "notes": "Listed in official BAESELED guide; transfer/requirements pending"
+    },
+    {
+      "title": "Literacy Assessment and Interventions",
+      "code": "",
+      "cu": 3,
+      "domain": "Literacy",
+      "status": "Needs Evaluation",
+      "progress": 0,
+      "notes": "Listed in official BAESELED guide; transfer/requirements pending"
+    },
+    {
+      "title": "Elementary Mathematics Curriculum",
+      "code": "",
+      "cu": 3,
+      "domain": "Math",
+      "status": "Needs Evaluation",
+      "progress": 0,
+      "notes": "Listed in official BAESELED guide; transfer/requirements pending"
+    },
+    {
+      "title": "Early Mathematics Methods and Interventions",
+      "code": "",
+      "cu": 3,
+      "domain": "Math",
+      "status": "Needs Evaluation",
+      "progress": 0,
+      "notes": "Listed in official BAESELED guide; transfer/requirements pending"
+    },
+    {
+      "title": "Elementary Mathematics Methods and Interventions",
+      "code": "",
+      "cu": 3,
+      "domain": "Math",
+      "status": "Needs Evaluation",
+      "progress": 0,
+      "notes": "Listed in official BAESELED guide; transfer/requirements pending"
+    },
+    {
+      "title": "Elementary Science Curriculum",
+      "code": "",
+      "cu": 3,
+      "domain": "Science",
+      "status": "Needs Evaluation",
+      "progress": 0,
+      "notes": "Listed in official BAESELED guide; transfer/requirements pending"
+    },
+    {
+      "title": "Elementary Science and Engineering Methods",
+      "code": "",
+      "cu": 3,
+      "domain": "Science",
+      "status": "Needs Evaluation",
+      "progress": 0,
+      "notes": "Listed in official BAESELED guide; transfer/requirements pending"
+    },
+    {
+      "title": "Natural Science Lab",
+      "code": "",
+      "cu": 2,
+      "domain": "Science",
+      "status": "Needs Evaluation",
+      "progress": 0,
+      "notes": "Listed in official BAESELED guide; transfer/requirements pending"
+    },
+    {
+      "title": "Elementary Social Studies Curriculum",
+      "code": "",
+      "cu": 3,
+      "domain": "Social Studies",
+      "status": "Needs Evaluation",
+      "progress": 0,
+      "notes": "Listed in official BAESELED guide; transfer/requirements pending"
+    },
+    {
+      "title": "Elementary Social Studies Methods",
+      "code": "",
+      "cu": 3,
+      "domain": "Social Studies",
+      "status": "Needs Evaluation",
+      "progress": 0,
+      "notes": "Listed in official BAESELED guide; transfer/requirements pending"
+    },
+    {
+      "title": "Elementary Health and Physical Education Methods",
+      "code": "",
+      "cu": 3,
+      "domain": "Methods",
+      "status": "Needs Evaluation",
+      "progress": 0,
+      "notes": "Listed in official BAESELED guide; transfer/requirements pending"
+    },
+    {
+      "title": "Elementary Fine Arts Methods",
+      "code": "",
+      "cu": 3,
+      "domain": "Methods",
+      "status": "Needs Evaluation",
+      "progress": 0,
+      "notes": "Listed in official BAESELED guide; transfer/requirements pending"
+    },
+    {
+      "title": "Elementary Disciplinary Literacy",
+      "code": "",
+      "cu": 3,
+      "domain": "Literacy",
+      "status": "Needs Evaluation",
+      "progress": 0,
+      "notes": "Listed in official BAESELED guide; transfer/requirements pending"
+    }
+  ],
+  "resources": [
+    {
+      "area": "Literacy",
+      "topic": "Phonics and fluency",
+      "title": "Reading Rockets",
+      "format": "Website",
+      "url": "https://www.readingrockets.org/",
+      "purpose": "Reading instruction fundamentals",
+      "status": "To Explore"
+    },
+    {
+      "area": "Literacy",
+      "topic": "Evidence-based reading",
+      "title": "What Works Clearinghouse",
+      "format": "Website",
+      "url": "https://ies.ed.gov/ncee/wwc/",
+      "purpose": "Literacy intervention evidence",
+      "status": "To Explore"
+    },
+    {
+      "area": "Literacy",
+      "topic": "Foundational skills",
+      "title": "Reading League",
+      "format": "Website",
+      "url": "https://www.thereadingleague.org/",
+      "purpose": "Science of reading",
+      "status": "To Explore"
+    },
+    {
+      "area": "Math",
+      "topic": "Elementary mathematics",
+      "title": "Khan Academy",
+      "format": "Practice",
+      "url": "https://www.khanacademy.org/math",
+      "purpose": "Review concepts and teaching examples",
+      "status": "To Explore"
+    },
+    {
+      "area": "Science",
+      "topic": "Elementary science",
+      "title": "PBS LearningMedia",
+      "format": "Website",
+      "url": "https://www.pbslearningmedia.org/",
+      "purpose": "Elementary science teaching ideas",
+      "status": "To Explore"
+    },
+    {
+      "area": "Social Studies",
+      "topic": "Primary sources",
+      "title": "Library of Congress",
+      "format": "Website",
+      "url": "https://www.loc.gov/classroom-materials/",
+      "purpose": "Historical sources for lessons",
+      "status": "To Explore"
+    },
+    {
+      "area": "Technology Applications 242",
+      "topic": "Exam preparation",
+      "title": "Texas Educator Certification",
+      "format": "Official portal",
+      "url": "https://tea.texas.gov/texas-educators/certification",
+      "purpose": "Check exam and certification requirements",
+      "status": "To Explore"
+    },
+    {
+      "area": "Technology Applications 242",
+      "topic": "Official exam information",
+      "title": "Texas Educator Certification Examination Program",
+      "format": "Official portal",
+      "url": "https://www.tx.nesinc.com/",
+      "purpose": "Current TExES exam prep materials",
+      "status": "To Explore"
+    },
+    {
+      "area": "ACP",
+      "topic": "Alternative certification",
+      "title": "iteach Texas",
+      "format": "Provider website",
+      "url": "https://www.iteach.net/",
+      "purpose": "Verify admission and certification pathway",
+      "status": "To Explore"
+    },
+    {
+      "area": "Jobs",
+      "topic": "District career pages",
+      "title": "Houston ISD Careers",
+      "format": "District website",
+      "url": "https://www.houstonisd.org/",
+      "purpose": "Check hiring information",
+      "status": "To Explore"
+    },
+    {
+      "area": "Jobs",
+      "topic": "District career pages",
+      "title": "Conroe ISD",
+      "format": "District website",
+      "url": "https://www.conroeisd.net/",
+      "purpose": "Check district career information",
+      "status": "To Explore"
+    },
+    {
+      "area": "WGU",
+      "topic": "Degree and student support",
+      "title": "WGU Student Portal",
+      "format": "Portal",
+      "url": "https://my.wgu.edu/",
+      "purpose": "Course resources and mentor communication",
+      "status": "To Explore"
+    }
+  ],
+  "source": "Tianas_Bayou_Command_Center_Live_Progress (1).xlsm",
+  "note": "Imported planning snapshot. Verify statuses, course codes, and degree mapping against WGU."
+}
