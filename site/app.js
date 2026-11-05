@@ -637,7 +637,6 @@ function bayouPublicMemoryTricks() {
         <div class="eyebrow" style="color:#F5A4C9">D658 · OA Study Strategies</div>
         <h2 style="color:#FFFFFF">💗 D658 Memory Tricks</h2>
         <p style="color:#F0D9DD">Pink, brown & black study mnemonics · connect each memory trick to a classroom scenario.</p>
-        ${royalAchievementPanel()}
 
         <div class="grid two" style="margin-top:16px">
         ${bayouD658Mnemonics.map(([icon,topic,trick,meaning]) => `<article style="padding:16px;border:1px solid #8C5A69;border-radius:14px;background:#332329">
